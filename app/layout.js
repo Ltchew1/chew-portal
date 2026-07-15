@@ -5,6 +5,10 @@ import './globals.css';
 export const metadata = {
   title: 'CHEW Portal',
   description: 'Your private CHEW client dashboard.',
+  icons: {
+    icon: '/icon.png',
+    apple: '/apple-icon.png',
+  },
 };
 
 export default function RootLayout({ children }) {
