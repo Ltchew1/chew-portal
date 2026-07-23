@@ -1,97 +1,83 @@
-// app/dashboard/page.js
+// app/dashboard/page.js — Dashboard v1 (CHEW Rebuild Kit, Section 4)
+//
+// Readiness Score, active goals, and action items are meant to come from a
+// client's application record — but chew-portal has no database connection
+// or Clerk-to-application link yet (separate project, separate database).
+// This ships the real v1 layout now with honest pending states rather than
+// fabricated numbers, so wiring real data later is a props change, not a
+// rebuild.
+
 import { currentUser } from '@clerk/nextjs/server';
 import Link from 'next/link';
-import {
-  IconClipboard, IconCalendar, IconVault, IconTrendUp,
-  IconBook, IconBuilding, IconShield, IconSparkles, IconChevronRight,
-} from '../components/icons';
+import { IconShield, IconTrendUp, IconClipboard, IconChevronRight } from '../components/icons';
 
-const CARDS = [
-  {
-    icon: IconClipboard,
-    title: 'My Action Plan',
-    href: '/dashboard/action-plan',
-    description: 'View the personalized steps assigned to your CHEW strategy.',
-    status: 'Setup in progress',
-  },
-  {
-    icon: IconCalendar,
-    title: 'Upcoming Appointment',
-    href: '/dashboard/appointments',
-    description: 'Your scheduled CHEW sessions will appear here.',
-    status: 'No appointment scheduled',
-  },
-  {
-    icon: IconVault,
-    title: 'Secure Documents',
-    href: '/dashboard/documents',
-    description: 'Your requested and completed documents are organized here.',
-    status: 'Vault setup in progress',
-  },
-  {
-    icon: IconTrendUp,
-    title: 'Progress Overview',
-    href: '/dashboard/progress',
-    description: 'Track completed steps and milestones through your CHEW journey.',
-    status: 'Profile setup incomplete',
-  },
-  {
-    icon: IconBook,
-    title: 'Education Center',
-    href: '/dashboard/education',
-    description: 'Access educational resources tied to your financial goals.',
-    status: 'Resources being prepared',
-  },
-  {
-    icon: IconBuilding,
-    title: 'Business Builder',
-    href: '/dashboard/business-builder',
-    description: 'Step-by-step guidance for structuring and funding your business.',
-    status: 'Not started',
-  },
-  {
-    icon: IconShield,
-    title: 'Funding Readiness',
-    href: '/dashboard/funding-readiness',
-    description: 'See what lenders typically look for before you apply.',
-    status: 'Not started',
-  },
-  {
-    icon: IconSparkles,
-    title: 'CHEW Guidance',
-    href: '/dashboard/guidance',
-    description: 'Personalized educational guidance, built from your strategy.',
-    status: 'Coming soon',
-  },
+const STARTER_TASKS = [
+  'Complete your Financial Blueprint intake',
+  'Book your strategy session',
+  'Review your program agreement',
 ];
 
-export default async function OverviewPage() {
+export default async function DashboardPage() {
   const user = await currentUser();
   const firstName = user?.firstName || 'there';
 
   return (
     <>
-      <span className="page-eyebrow">Overview</span>
+      <span className="page-eyebrow">Dashboard</span>
       <h1>Welcome back, {firstName}.</h1>
       <p className="text-faint" style={{ maxWidth: '60ch' }}>
-        Here's your personalized CHEW overview and the next actions that deserve your attention.
+        Your readiness, goals, and next actions will live here as your CHEW strategy comes together.
       </p>
 
-      <div className="card-grid">
-        {CARDS.map((c) => {
-          const Icon = c.icon;
-          return (
-            <Link key={c.href} href={c.href} className="card" style={{ display: 'block', color: 'inherit' }}>
-              <div className="card-icon"><Icon /></div>
-              <h3>{c.title}</h3>
-              <p style={{ fontSize: '0.88rem' }}>{c.description}</p>
-              <div className="card-footer">
-                <span className="badge badge-soon">{c.status}</span>
-                <IconChevronRight />
-              </div>
-            </Link>
-          );
-        })}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px', marginTop: '28px' }}>
+        <div className="card">
+          <div className="card-icon"><IconShield /></div>
+          <h3>Readiness Score</h3>
+          <p style={{ fontSize: '0.88rem' }}>
+            Calculated after your Financial Blueprint Assessment is reviewed.
+          </p>
+          <span className="badge badge-pending">Not yet available</span>
+        </div>
+
+        <div className="card">
+          <div className="card-icon"><IconTrendUp /></div>
+          <h3>Active Goals</h3>
+          <p style={{ fontSize: '0.88rem' }}>
+            Up to three goals, drawn from your application answers, will appear here once set with your strategist.
+          </p>
+          <span className="badge badge-pending">Not yet set</span>
+        </div>
+      </div>
+
+      <h2 style={{ marginTop: '36px' }}>Getting started</h2>
+      <p className="text-faint" style={{ maxWidth: '60ch' }}>
+        A few first steps every client works through. Track and check these off on your{' '}
+        <Link href="/dashboard/tasks">Tasks</Link> page.
+      </p>
+      <div className="card" style={{ marginTop: '16px' }}>
+        {STARTER_TASKS.map((task, i) => (
+          <div
+            key={task}
+            className="flex-between"
+            style={{
+              padding: '10px 0',
+              borderBottom: i < STARTER_TASKS.length - 1 ? '1px solid var(--divider)' : 'none',
+            }}
+          >
+            <span style={{ fontSize: '0.9rem' }}>{task}</span>
+            <span className="badge badge-neutral">Pending</span>
+          </div>
+        ))}
+        <Link
+          href="/dashboard/tasks"
+          className="flex-between"
+          style={{ paddingTop: '16px', color: 'inherit' }}
+        >
+          <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>
+            <IconClipboard /> Go to Tasks
+          </span>
+          <IconChevronRight />
+        </Link>
       </div>
     </>
   );

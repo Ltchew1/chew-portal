@@ -18,7 +18,7 @@ export default async function DashboardLayout({ children }) {
           <img src="/chew-logo.png" alt="CHEW" style={{ height: '30px', width: 'auto' }} />
           <span>
             CHEW LLC
-            <span className="portal-brand-sub">Private Client Portal</span>
+            <span className="portal-brand-sub">Command Center</span>
           </span>
         </div>
         <UserButton afterSignOutUrl="/" />

@@ -1,20 +1,21 @@
 // app/components/nav-items.js
 import {
-  IconHome, IconClipboard, IconCalendar, IconVault, IconTrendUp,
-  IconBook, IconBuilding, IconShield, IconSparkles, IconMessage, IconSettings,
+  IconHome, IconShield, IconBook, IconClipboard,
+  IconVault, IconMessage, IconSparkles, IconSettings,
 } from './icons';
 
+// Command Center nav — Phase 1 (CHEW Rebuild Kit, Section 4). Deliberately
+// simplified from the prior 10-item nav: Business Builder and Funding
+// Readiness are Phase 2 (Financial Health / Business Readiness / Funding
+// Readiness scores); Appointments and Progress fold into Tasks for now.
 export const NAV_ITEMS = [
-  { label: 'Overview', href: '/dashboard', icon: IconHome },
-  { label: 'My Action Plan', href: '/dashboard/action-plan', icon: IconClipboard },
-  { label: 'Appointments', href: '/dashboard/appointments', icon: IconCalendar },
-  { label: 'Secure Documents', href: '/dashboard/documents', icon: IconVault },
-  { label: 'Progress', href: '/dashboard/progress', icon: IconTrendUp },
-  { label: 'Education Center', href: '/dashboard/education', icon: IconBook },
-  { label: 'Business Builder', href: '/dashboard/business-builder', icon: IconBuilding },
-  { label: 'Funding Readiness', href: '/dashboard/funding-readiness', icon: IconShield },
-  { label: 'CHEW Guidance', href: '/dashboard/guidance', icon: IconSparkles },
+  { label: 'Dashboard', href: '/dashboard', icon: IconHome },
+  { label: 'Blueprint', href: '/dashboard/blueprint', icon: IconShield },
+  { label: 'Education', href: '/dashboard/education', icon: IconBook },
+  { label: 'Tasks', href: '/dashboard/tasks', icon: IconClipboard },
+  { label: 'Documents', href: '/dashboard/documents', icon: IconVault },
   { label: 'Messages', href: '/dashboard/messages', icon: IconMessage },
+  { label: 'Advisor', href: '/dashboard/guidance', icon: IconSparkles },
 ];
 
 export const SETTINGS_ITEM = { label: 'Account Settings', href: '/dashboard/settings', icon: IconSettings };
