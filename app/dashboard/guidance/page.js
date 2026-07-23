@@ -4,13 +4,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
 import PageHeader from '../../components/PageHeader';
-import { IconSparkles } from '../../components/icons';
-
-const STARTER_PROMPTS = [
-  'What does "credit utilization" actually mean?',
-  "What's the difference between a secured and unsecured card?",
-  'What should I have ready before applying for business credit?',
-];
 
 export default function GuidancePage() {
   const { user } = useUser();
@@ -20,10 +13,56 @@ export default function GuidancePage() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef(null);
+  const startedRef = useRef(false);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
+
+  // The advisor opens the conversation itself — vision before problems (see
+  // SYSTEM_PROMPT in api/guidance/route.js) — rather than waiting for the
+  // client to ask something first. startedRef guards against React calling
+  // this effect twice in development.
+  useEffect(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    beginConversation();
+  }, []);
+
+  async function beginConversation() {
+    setMessages([{ role: 'assistant', content: '' }]);
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/guidance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ start: true }),
+      });
+
+      if (!res.ok || !res.body) {
+        throw new Error('Request failed');
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        accumulated += decoder.decode(value, { stream: true });
+        setMessages([{ role: 'assistant', content: accumulated }]);
+      }
+    } catch (err) {
+      setMessages([{
+        role: 'assistant',
+        content: "Hi, I'm CHEW Guidance. What life are you trying to build?",
+      }]);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function sendMessage(text) {
     const content = text.trim();
@@ -85,7 +124,7 @@ export default function GuidancePage() {
     <>
       <PageHeader
         eyebrow="CHEW Guidance"
-        title={`Hi ${firstName}, what can I help you understand?`}
+        title={`Hi ${firstName}, let's start with where you're headed.`}
         description="Educational guidance only — not legal or financial advice, and not a substitute for your CHEW strategist."
       />
 
@@ -101,29 +140,6 @@ export default function GuidancePage() {
             gap: '16px',
           }}
         >
-          {messages.length === 0 && (
-            <div style={{ margin: 'auto', textAlign: 'center', maxWidth: '440px' }}>
-              <div className="card-icon" style={{ margin: '0 auto 14px' }}>
-                <IconSparkles />
-              </div>
-              <p className="text-faint" style={{ marginBottom: '18px' }}>
-                Ask about credit, budgeting, business credit, or anything in your CHEW plan.
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {STARTER_PROMPTS.map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => sendMessage(p)}
-                    className="btn btn-outline btn-sm"
-                    style={{ textAlign: 'left' }}
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
           {messages.map((m, i) => (
             <div
               key={i}
