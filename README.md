@@ -52,11 +52,33 @@ upload this into the same repo as the marketing site.
 - Click the account icon (top right) → Sign Out → confirm you're logged out
   and redirected correctly
 
+## Client status (Applicant / Accepted / Paid)
+
+Every client has a status — `applicant`, `accepted`, or `paid` — that gates
+access to status-restricted sections like the Credit Lab. The
+`client_status` table is the source of truth and full audit trail (append-
+only: every change is a new row, never an edit); Clerk's `publicMetadata` on
+the user holds a mirror of the current status so server components can
+check it on every request without a DB round trip.
+
+There's no admin UI for this yet, so status is set manually:
+
+```
+npm run status:set -- --email=client@example.com --status=paid --set-by=you@chew.com
+npm run status:set -- --clerk-user-id=user_abc123 --status=accepted --set-by=you@chew.com --note="signed program agreement"
+```
+
+Requires `CLERK_SECRET_KEY` and `DATABASE_URL` in `.env.local`. `--set-by`
+is required and goes into the audit trail — use your own email or name.
+New accounts default to `applicant` (nothing to run for that case).
+
 ## What's real right now
 
 - Sign up / sign in / sign out — fully working, real Clerk accounts
 - `/dashboard` — protected; visiting it while signed out redirects to sign-in
   automatically (this is the middleware doing its job)
+- Client status model (Applicant/Accepted/Paid) — stored in Postgres,
+  mirrored to Clerk, gates the Credit Lab server-side (see above)
 - Brand styling — matches joinchew.com's colors and fonts already
 
 ## What's next (not built yet, on purpose)

@@ -1,7 +1,7 @@
 // app/components/nav-items.js
 import {
   IconHome, IconShield, IconBook, IconClipboard,
-  IconVault, IconMessage, IconSparkles, IconSettings,
+  IconVault, IconMessage, IconSparkles, IconSettings, IconScale,
 } from './icons';
 
 // Command Center nav — Phase 1 (CHEW Rebuild Kit, Section 4). Deliberately
@@ -12,6 +12,7 @@ export const NAV_ITEMS = [
   { label: 'Dashboard', href: '/dashboard', icon: IconHome },
   { label: 'Blueprint', href: '/dashboard/blueprint', icon: IconShield },
   { label: 'Education', href: '/dashboard/education', icon: IconBook },
+  { label: 'Credit Lab', href: '/dashboard/credit-lab', icon: IconScale },
   { label: 'Tasks', href: '/dashboard/tasks', icon: IconClipboard },
   { label: 'Documents', href: '/dashboard/documents', icon: IconVault },
   { label: 'Messages', href: '/dashboard/messages', icon: IconMessage },
