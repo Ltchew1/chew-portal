@@ -31,7 +31,21 @@ upload this into the same repo as the marketing site.
   your own computer, never uploaded)
 - Redeploy after adding them
 
-**4. Test it**
+**4. Database setup (Neon Postgres)**
+- Create a free project at [neon.tech](https://neon.tech)
+- In the Neon dashboard's "Connect" panel, copy **both** connection strings:
+  - the pooled one → `DATABASE_URL`
+  - the direct/unpooled one → `DATABASE_URL_UNPOOLED`
+- Add both to `.env.local` (dev) and Vercel → Settings → Environment
+  Variables (prod) — see `.env.example` for the exact variable names
+- Apply the schema: `npm run db:migrate` (runs `db/schema.sql` against
+  `DATABASE_URL_UNPOOLED` — safe to re-run, every statement is
+  `CREATE ... IF NOT EXISTS`)
+- Confirm it worked: `npm run db:verify` (connects with `DATABASE_URL` and
+  checks all expected tables exist)
+- Redeploy on Vercel after adding the env vars there too
+
+**5. Test it**
 - Visit your new `.vercel.app` URL
 - Click Sign Up, create a real test account
 - You should land on `/dashboard` and see your own name in "Welcome back"

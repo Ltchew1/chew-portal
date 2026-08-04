@@ -5,13 +5,16 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "db:migrate": "node scripts/run-schema.js",
+    "db:verify": "node scripts/verify-db.js"
   },
   "dependencies": {
-    "next": "14.2.5",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
+    "@anthropic-ai/sdk": "0.27.3",
     "@clerk/nextjs": "5.2.4",
-    "@anthropic-ai/sdk": "0.27.3"
+    "next": "14.2.5",
+    "pg": "^8.22.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
   }
 }
