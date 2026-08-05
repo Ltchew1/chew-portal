@@ -72,6 +72,41 @@ Requires `CLERK_SECRET_KEY` and `DATABASE_URL` in `.env.local`. `--set-by`
 is required and goes into the audit trail — use your own email or name.
 New accounts default to `applicant` (nothing to run for that case).
 
+## CHEW Credit Lab — legal guardrail framework
+
+The Credit Lab (`/dashboard/credit-lab`, Paid status required) is
+client-executed dispute *education*, never a service CHEW performs on the
+client's behalf — this is what keeps it outside Florida's Credit Service
+Organization statute (817.7001 et seq.). The rule is enforced in code, not
+just copy:
+
+- **Attestation gate** (`app/components/credit-lab/AttestationGate.js`,
+  `lib/attestations.js`) — a client must check the exact required statement
+  per flagged item before it counts as attested. The statement text is
+  checked server-side against the one canonical wording in
+  `lib/creditLabCompliance.js`; the `attestations` table has a `UNIQUE`
+  constraint on `dispute_item_id`, so the database itself refuses a second
+  attestation on the same item. `assertItemsAttested()` is the hook a
+  future letter generator must call before generating anything — "no
+  attestation = no generation" is enforced there, against the database.
+- **Client-decision enforcement** — nothing in the schema or code has a
+  field for a system-suggested or auto-labeled "disputable" item; `reason`
+  is always a value the client actively picks (see `BareFlagForm.js` — the
+  reason radios have no default checked value).
+- **Standing disclosures** (`app/components/credit-lab/StandingDisclosures.js`)
+  — shown at Credit Lab entry and again before attestation, in the same
+  voice as `DisclaimerBar`.
+- **Accuracy guard / no promised outcomes** — `lib/creditLabCompliance.js`
+  holds the one approved wording for all compliance copy, plus a
+  forbidden-phrase list checked by `npm run compliance:copy`.
+- **No-transmission lock** — `npm run compliance:no-transmission` fails the
+  build if any Credit Lab API route makes an outbound network call, or if
+  banned identifiers like `sendDispute`/`submitToBureau` appear anywhere in
+  the app. Letters are architected download/print-only from the start;
+  there is no bureau-facing code path to remove later.
+
+Run both checks together with `npm run compliance:check`.
+
 ## What's real right now
 
 - Sign up / sign in / sign out — fully working, real Clerk accounts
@@ -79,6 +114,11 @@ New accounts default to `applicant` (nothing to run for that case).
   automatically (this is the middleware doing its job)
 - Client status model (Applicant/Accepted/Paid) — stored in Postgres,
   mirrored to Clerk, gates the Credit Lab server-side (see above)
+- CHEW Credit Lab guardrail framework — standing disclosures, attestation
+  gate, and compliance-copy/no-transmission checks, all backed by Postgres
+  (see above). The report walkthrough, self-flagging tool, letter
+  generator, tracker, and education library are not built yet — the entry
+  page currently has only a bare placeholder form for testing the gate.
 - Brand styling — matches joinchew.com's colors and fonts already
 
 ## What's next (not built yet, on purpose)

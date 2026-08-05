@@ -9,23 +9,19 @@
 // an insufficient status never receives the Credit Lab's markup or data;
 // it isn't UI hidden behind a client-side check.
 
-import { currentUser } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import PageHeader from '../../components/PageHeader';
 import EmptyState from '../../components/EmptyState';
 import { IconLock } from '../../components/icons';
-import { CREDIT_LAB_REQUIRED_STATUS, hasRequiredStatus, statusFromClerkUser } from '../../../lib/clientStatus';
+import { getCreditLabAccess } from '../../../lib/clientStatus';
 
 const STATUS_LABELS = { applicant: 'Applicant', accepted: 'Accepted', paid: 'Paid' };
 
 export default async function CreditLabLayout({ children }) {
-  const user = await currentUser();
+  const { user, status, hasAccess } = await getCreditLabAccess();
   if (!user) {
     redirect('/sign-in');
   }
-
-  const status = statusFromClerkUser(user);
-  const hasAccess = hasRequiredStatus(status, CREDIT_LAB_REQUIRED_STATUS);
 
   if (!hasAccess) {
     return (
