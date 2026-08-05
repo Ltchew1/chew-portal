@@ -107,6 +107,17 @@ just copy:
 
 Run both checks together with `npm run compliance:check`.
 
+### Credit Lab features (Layer 4)
+
+- **4a — Report Walkthrough** (`/dashboard/credit-lab/walkthrough`) — how to
+  pull free reports from all three bureaus at annualcreditreport.com, and
+  what each report section means in plain English. Pure education, no DB
+  reads/writes. Copy describes what each field *is*, never whether a given
+  entry looks wrong — that stays the client's call (accuracy guard).
+- 4b (self-flagging tool), 4c (letter generator), 4d (dispute tracker), and
+  4e (education library) are not built yet. `CreditLabSubNav` shows them as
+  "coming soon."
+
 ## What's real right now
 
 - Sign up / sign in / sign out — fully working, real Clerk accounts
@@ -116,9 +127,11 @@ Run both checks together with `npm run compliance:check`.
   mirrored to Clerk, gates the Credit Lab server-side (see above)
 - CHEW Credit Lab guardrail framework — standing disclosures, attestation
   gate, and compliance-copy/no-transmission checks, all backed by Postgres
-  (see above). The report walkthrough, self-flagging tool, letter
-  generator, tracker, and education library are not built yet — the entry
-  page currently has only a bare placeholder form for testing the gate.
+  (see above)
+- Credit Lab Report Walkthrough (4a) — real, plain-English content. The
+  self-flagging tool, letter generator, tracker, and education library
+  (4b–4e) are not built yet — the overview page currently has only a bare
+  placeholder form for testing the attestation gate.
 - Brand styling — matches joinchew.com's colors and fonts already
 
 ## What's next (not built yet, on purpose)
