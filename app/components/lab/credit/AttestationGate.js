@@ -1,14 +1,14 @@
-// app/components/credit-lab/AttestationGate.js
+// app/components/lab/credit/AttestationGate.js
 //
 // The reusable attestation gate: renders the standing disclosures again
 // (variant="pre-generation" — the "before letter generation" placement),
 // then one checkbox per flagged item using the exact canonical statement
 // from ATTESTATION_STATEMENTS. Checking a box POSTs to
-// /api/credit-lab/attestations immediately — that request is the real
+// /api/lab/credit/attestations immediately — that request is the real
 // gate (lib/attestations.js rejects anything that doesn't match the
 // canonical wording, and the DB won't allow a second attestation on the
 // same item). This component's "all attested" state is UX only, so it
-// must never be trusted as the enforcement point itself — Layer 4c's
+// must never be trusted as the enforcement point itself — the future
 // letter generator has to call assertItemsAttested() server-side before
 // generating anything, regardless of what this component shows on screen.
 //
@@ -21,7 +21,7 @@
 
 import { useState } from 'react';
 import StandingDisclosures from './StandingDisclosures';
-import { ATTESTATION_STATEMENTS } from '../../../lib/creditLabCompliance';
+import { ATTESTATION_STATEMENTS } from '../../../../lib/creditRoomCompliance';
 
 const BUREAU_LABELS = { equifax: 'Equifax', experian: 'Experian', transunion: 'TransUnion' };
 const REASON_LABELS = { not_mine: "Don't recognize", not_authorized: "Didn't authorize" };
@@ -38,7 +38,7 @@ function ItemRow({ item, onAttested, onRemoved }) {
     setAttesting(true);
     setError(null);
     try {
-      const res = await fetch('/api/credit-lab/attestations', {
+      const res = await fetch('/api/lab/credit/attestations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ disputeItemId: item.id, statementText: statement }),
@@ -58,7 +58,7 @@ function ItemRow({ item, onAttested, onRemoved }) {
     setRemoving(true);
     setError(null);
     try {
-      const res = await fetch(`/api/credit-lab/dispute-items/${item.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/lab/credit/dispute-items/${item.id}`, { method: 'DELETE' });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Could not remove this item.');
       onRemoved(item.id);
@@ -144,7 +144,7 @@ export default function AttestationGate({ items }) {
         <p className="text-faint" style={{ fontSize: '0.85rem', marginTop: '4px' }}>
           {attestedCount} of {localItems.length} items attested.{' '}
           {allAttested
-            ? "Letter generation isn't built yet (Layer 4c) — once it is, it only unlocks here once every item above is attested."
+            ? "Letter generation isn't built yet — once it is, it only unlocks here once every item above is attested."
             : "Check each statement above to attest — a letter can't be generated for an item until you do."}
         </p>
       )}

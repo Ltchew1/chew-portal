@@ -1,20 +1,20 @@
-// app/dashboard/credit-lab/page.js
+// app/dashboard/lab/credit/page.js
 //
-// Credit Lab module entry point / summary. Gated by
-// app/dashboard/credit-lab/layout.js. Links out to the two built
-// sub-features (Report Walkthrough — Layer 4a, Flag Items — Layer 4b);
-// the letter generator, tracker, and education library (4c–4e) aren't
-// built yet, shown as "coming soon" in CreditLabSubNav.
+// Credit room entry point / summary, inside CHEW: The Lab. Gated by
+// app/dashboard/lab/credit/layout.js (Paid status) on top of the hub's own
+// Accepted-status gate. Links out to the two built sub-features (Report
+// Walkthrough, Flag Items); the letter generator, tracker, and education
+// library aren't built yet, shown as "coming soon" in CreditRoomSubNav.
 
 import { currentUser } from '@clerk/nextjs/server';
 import Link from 'next/link';
-import PageHeader from '../../components/PageHeader';
-import StandingDisclosures from '../../components/credit-lab/StandingDisclosures';
-import CreditLabSubNav from '../../components/credit-lab/CreditLabSubNav';
-import { IconBook, IconScale, IconChevronRight } from '../../components/icons';
-import { listDisputeItemsForUser } from '../../../lib/disputeItems';
+import PageHeader from '../../../components/PageHeader';
+import StandingDisclosures from '../../../components/lab/credit/StandingDisclosures';
+import CreditRoomSubNav from '../../../components/lab/credit/CreditRoomSubNav';
+import { IconBook, IconScale, IconChevronRight } from '../../../components/icons';
+import { listDisputeItemsForUser } from '../../../../lib/disputeItems';
 
-export default async function CreditLabPage() {
+export default async function CreditRoomPage() {
   const user = await currentUser();
   const items = await listDisputeItemsForUser(user.id);
   const attestedCount = items.filter((i) => i.attested_at).length;
@@ -22,17 +22,17 @@ export default async function CreditLabPage() {
   return (
     <>
       <PageHeader
-        eyebrow="CHEW Credit Lab"
-        title="CHEW Credit Lab"
+        eyebrow="The Lab · Credit"
+        title="Credit"
         description="We show you how to review your report and dispute items you don't recognize — filed by you, directly with the bureaus. This is education and tools, not credit repair."
       />
 
-      <CreditLabSubNav />
+      <CreditRoomSubNav />
 
       <StandingDisclosures variant="entry" />
 
       <div className="card-grid">
-        <Link href="/dashboard/credit-lab/walkthrough" className="card" style={{ color: 'inherit' }}>
+        <Link href="/dashboard/lab/credit/walkthrough" className="card" style={{ color: 'inherit' }}>
           <div className="card-icon"><IconBook /></div>
           <h3>Report Walkthrough</h3>
           <p style={{ fontSize: '0.88rem' }}>
@@ -44,7 +44,7 @@ export default async function CreditLabPage() {
           </span>
         </Link>
 
-        <Link href="/dashboard/credit-lab/flag" className="card" style={{ color: 'inherit' }}>
+        <Link href="/dashboard/lab/credit/flag" className="card" style={{ color: 'inherit' }}>
           <div className="card-icon"><IconScale /></div>
           <h3>Flag Items</h3>
           <p style={{ fontSize: '0.88rem' }}>

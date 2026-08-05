@@ -2,7 +2,7 @@
 //
 // The documented manual way to change a client's status until an admin UI
 // exists. Writes the audit-trail row to client_status, then mirrors it to
-// Clerk publicMetadata (the fast read the Credit Lab gate checks — see
+// Clerk publicMetadata (the fast read every room gate in The Lab checks — see
 // lib/clientStatus.js). If the Clerk update fails after the DB write
 // succeeds, the script exits non-zero and says so — the DB row is already
 // correct, so re-run is safe (it inserts a fresh status row either way).
@@ -114,7 +114,7 @@ async function main() {
   } catch (err) {
     console.error(
       `DB status row was written, but mirroring to Clerk publicMetadata failed: ${err.message}\n` +
-      `The Credit Lab gate reads Clerk metadata, so this user will NOT see the new status until ` +
+      `Every room gate in The Lab reads Clerk metadata, so this user will NOT see the new status until ` +
       `this succeeds. Re-run this same command to retry — it's safe, it just adds another audit row.`
     );
     process.exit(1);

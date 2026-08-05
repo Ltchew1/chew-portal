@@ -1,13 +1,17 @@
 // scripts/check-compliance-copy.js
 //
-// Scans every file under app/dashboard/credit-lab, app/components/credit-lab,
-// and app/api/credit-lab for FORBIDDEN_PHRASES (defined once, in
-// lib/creditLabCompliance.js) — the automated form of the "client-decision
-// enforcement" and "accuracy guard" guardrails: this catches prescriptive
-// or promissory language before it ships, not just at review time.
+// Scans every file under app/dashboard/lab, app/components/lab, and
+// app/api/lab for FORBIDDEN_PHRASES (defined once, in
+// lib/creditRoomCompliance.js) — the automated form of the
+// "client-decision enforcement" and "accuracy guard" guardrails: this
+// catches prescriptive or promissory language before it ships, not just at
+// review time. Scoped to the whole Lab, not just the Credit room, since
+// the "no guaranteed outcomes" bar applies to every room (Financial
+// Intelligence's future content included).
 //
-// Reads the phrase list directly out of lib/creditLabCompliance.js (rather
-// than duplicating it here) so there is exactly one list to maintain.
+// Reads the phrase list directly out of lib/creditRoomCompliance.js
+// (rather than duplicating it here) so there is exactly one list to
+// maintain.
 //
 // Run via `npm run compliance:copy`. Exits non-zero and prints file:line
 // for every match found.
@@ -18,11 +22,11 @@ const path = require('path');
 const REPO_ROOT = path.join(__dirname, '..');
 
 function loadForbiddenPhrases() {
-  const compliancePath = path.join(REPO_ROOT, 'lib', 'creditLabCompliance.js');
+  const compliancePath = path.join(REPO_ROOT, 'lib', 'creditRoomCompliance.js');
   const source = fs.readFileSync(compliancePath, 'utf8');
   const match = source.match(/export const FORBIDDEN_PHRASES = \[([\s\S]*?)\];/);
   if (!match) {
-    throw new Error('Could not find FORBIDDEN_PHRASES in lib/creditLabCompliance.js');
+    throw new Error('Could not find FORBIDDEN_PHRASES in lib/creditRoomCompliance.js');
   }
   return match[1]
     .split('\n')
@@ -32,9 +36,9 @@ function loadForbiddenPhrases() {
 }
 
 const TARGET_DIRS = [
-  path.join(REPO_ROOT, 'app', 'dashboard', 'credit-lab'),
-  path.join(REPO_ROOT, 'app', 'components', 'credit-lab'),
-  path.join(REPO_ROOT, 'app', 'api', 'credit-lab'),
+  path.join(REPO_ROOT, 'app', 'dashboard', 'lab'),
+  path.join(REPO_ROOT, 'app', 'components', 'lab'),
+  path.join(REPO_ROOT, 'app', 'api', 'lab'),
 ];
 
 function walk(dir, out = []) {
@@ -66,11 +70,11 @@ function main() {
   }
 
   if (violations > 0) {
-    console.error(`\n${violations} forbidden-phrase match(es) found. See lib/creditLabCompliance.js for the list and why.`);
+    console.error(`\n${violations} forbidden-phrase match(es) found. See lib/creditRoomCompliance.js for the list and why.`);
     process.exit(1);
   }
 
-  console.log(`Scanned ${files.length} file(s) under credit-lab — no forbidden phrases found.`);
+  console.log(`Scanned ${files.length} file(s) under The Lab — no forbidden phrases found.`);
 }
 
 main();

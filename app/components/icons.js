@@ -91,3 +91,35 @@ export const IconScale = (p) => (
     <path d="M15 8l2.5 5.2a2.7 2.7 0 0 0 5 0L20 8" />
   </svg>
 );
+
+export const IconFlask = (p) => (
+  <svg {...base(p)}>
+    <path d="M9 2h6M10 2v6.5L4.8 18a2 2 0 0 0 1.7 3h11a2 2 0 0 0 1.7-3L14 8.5V2" />
+    <path d="M7.5 14h9" />
+  </svg>
+);
+
+export const IconCoins = (p) => (
+  <svg {...base(p)}>
+    <ellipse cx="9" cy="7" rx="6" ry="3.2" />
+    <path d="M3 7v5c0 1.77 2.69 3.2 6 3.2s6-1.43 6-3.2V7" />
+    <path d="M9 12.2c0 1.77 2.69 3.2 6 3.2s6-1.43 6-3.2V17c0 1.77-2.69 3.2-6 3.2S9 18.77 9 17v-1" />
+    <ellipse cx="15" cy="12.2" rx="6" ry="3.2" />
+  </svg>
+);
+
+export const IconChart = (p) => (
+  <svg {...base(p)}>
+    <path d="M4 21V10M11 21V3M18 21v-7" />
+    <path d="M2 21h20" />
+  </svg>
+);
+
+export const IconGears = (p) => (
+  <svg {...base(p)}>
+    <circle cx="8.5" cy="15.5" r="3.2" />
+    <circle cx="16" cy="7.5" r="2.4" />
+    <path d="M8.5 12.3V10M8.5 18.7V21M5.7 13.9l-2-1.3M11.3 17.1l2 1.3M5.7 17.1l-2 1.3M11.3 13.9l2-1.3" />
+    <path d="M16 5.1V3.5M16 9.5V11M14.1 6.4l-1.3-.9M17.9 8.6l1.3.9M14.1 8.6l-1.3.9M17.9 6.4l1.3-.9" />
+  </svg>
+);

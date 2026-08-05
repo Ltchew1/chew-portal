@@ -55,7 +55,7 @@ upload this into the same repo as the marketing site.
 ## Client status (Applicant / Accepted / Paid)
 
 Every client has a status — `applicant`, `accepted`, or `paid` — that gates
-access to status-restricted sections like the Credit Lab. The
+access to status-restricted sections like The Lab and its rooms. The
 `client_status` table is the source of truth and full audit trail (append-
 only: every change is a new row, never an edit); Clerk's `publicMetadata` on
 the user holds a mirror of the current status so server components can
@@ -72,59 +72,85 @@ Requires `CLERK_SECRET_KEY` and `DATABASE_URL` in `.env.local`. `--set-by`
 is required and goes into the audit trail — use your own email or name.
 New accounts default to `applicant` (nothing to run for that case).
 
-## CHEW Credit Lab — legal guardrail framework
+## CHEW: The Lab
 
-The Credit Lab (`/dashboard/credit-lab`, Paid status required) is
-client-executed dispute *education*, never a service CHEW performs on the
-client's behalf — this is what keeps it outside Florida's Credit Service
-Organization statute (817.7001 et seq.). The rule is enforced in code, not
-just copy:
+The Lab (`/dashboard/lab`, Accepted status required just to see the room
+picker) is a hub of focused "rooms," each a different part of a client's
+financial infrastructure. `lib/rooms.js` is the single source of truth for
+every room — name, icon, tagline, route, required status, and whether it's
+actually built — read by the hub's room picker, each room's sub-nav, and
+each room's access gate alike.
 
-- **Attestation gate** (`app/components/credit-lab/AttestationGate.js`,
+| Room | Route | Required status | Built |
+|---|---|---|---|
+| Credit | `/dashboard/lab/credit` | Paid | Yes |
+| Credit Builder | `/dashboard/lab/credit-builder` | Accepted | No — "coming to your Lab" |
+| Business | `/dashboard/lab/business` | Accepted | No |
+| Funding | `/dashboard/lab/funding` | Accepted | No |
+| Financial Intelligence | `/dashboard/lab/intelligence` | Accepted | No |
+| Money Systems | `/dashboard/lab/money-systems` | Accepted | No |
+
+Gating is layered: `app/dashboard/lab/layout.js` requires Accepted just to
+enter The Lab at all; each room's own `layout.js` (via the shared
+`app/components/lab/RoomGate.js`) can require more on top of that — Credit
+requires Paid. Every gate runs independently on every request, including
+API routes (`app/api/lab/credit/**` re-checks access itself; the page gate
+above it doesn't protect it).
+
+### Credit room — legal guardrail framework
+
+Credit is client-executed dispute *education*, never a service CHEW
+performs on the client's behalf — this is what keeps it outside Florida's
+Credit Service Organization statute (817.7001 et seq.). The rule is
+enforced in code, not just copy:
+
+- **Attestation gate** (`app/components/lab/credit/AttestationGate.js`,
   `lib/attestations.js`) — a client must check the exact required statement
   per flagged item before it counts as attested. The statement text is
   checked server-side against the one canonical wording in
-  `lib/creditLabCompliance.js`; the `attestations` table has a `UNIQUE`
+  `lib/creditRoomCompliance.js`; the `attestations` table has a `UNIQUE`
   constraint on `dispute_item_id`, so the database itself refuses a second
   attestation on the same item. `assertItemsAttested()` is the hook a
   future letter generator must call before generating anything — "no
   attestation = no generation" is enforced there, against the database.
 - **Client-decision enforcement** — nothing in the schema or code has a
   field for a system-suggested or auto-labeled "disputable" item; `reason`
-  is always a value the client actively picks (see `BareFlagForm.js` — the
+  is always a value the client actively picks (see `FlagItemForm.js` — the
   reason radios have no default checked value).
-- **Standing disclosures** (`app/components/credit-lab/StandingDisclosures.js`)
-  — shown at Credit Lab entry and again before attestation, in the same
+- **Standing disclosures** (`app/components/lab/credit/StandingDisclosures.js`)
+  — shown at Credit room entry and again before attestation, in the same
   voice as `DisclaimerBar`.
-- **Accuracy guard / no promised outcomes** — `lib/creditLabCompliance.js`
+- **Accuracy guard / no promised outcomes** — `lib/creditRoomCompliance.js`
   holds the one approved wording for all compliance copy, plus a
-  forbidden-phrase list checked by `npm run compliance:copy`.
+  forbidden-phrase list checked by `npm run compliance:copy`. This list
+  applies Lab-wide (not just Credit) — no room may promise a guaranteed
+  outcome, approval, or funding amount.
 - **No-transmission lock** — `npm run compliance:no-transmission` fails the
-  build if any Credit Lab API route makes an outbound network call, or if
-  banned identifiers like `sendDispute`/`submitToBureau` appear anywhere in
-  the app. Letters are architected download/print-only from the start;
-  there is no bureau-facing code path to remove later.
+  build if any `app/api/lab/**` route (any room) makes an outbound network
+  call, or if banned identifiers like `sendDispute`/`submitToBureau` appear
+  anywhere in the app. Letters are architected download/print-only from the
+  start; there is no bureau-facing code path to remove later.
 
 Run both checks together with `npm run compliance:check`.
 
-### Credit Lab features (Layer 4)
+### Credit room features
 
-- **4a — Report Walkthrough** (`/dashboard/credit-lab/walkthrough`) — how to
+- **Report Walkthrough** (`/dashboard/lab/credit/walkthrough`) — how to
   pull free reports from all three bureaus at annualcreditreport.com, and
   what each report section means in plain English. Pure education, no DB
   reads/writes. Copy describes what each field *is*, never whether a given
   entry looks wrong — that stays the client's call (accuracy guard).
-- **4b — Self-Flagging Tool** (`/dashboard/credit-lab/flag`) —
-  `FlagItemForm.js` creates a flagged item (bureau, creditor, account
-  number, reason — reason radios have no default, the client must actively
-  pick one); `AttestationGate.js` lists everything flagged so far and is
-  where the client attests. Flagging and attesting are two separate,
-  deliberate actions, not one click. An unattested item can be removed
-  (`DELETE /api/credit-lab/dispute-items/[id]`) to fix a mistake — once
+- **Self-Flagging Tool** (`/dashboard/lab/credit/flag`) — `FlagItemForm.js`
+  creates a flagged item (bureau, creditor, account number, reason — reason
+  radios have no default, the client must actively pick one);
+  `AttestationGate.js` lists everything flagged so far and is where the
+  client attests. Flagging and attesting are two separate, deliberate
+  actions, not one click. An unattested item can be removed
+  (`DELETE /api/lab/credit/dispute-items/[id]`) to fix a mistake — once
   attested, it can't be; `deleteUnattestedItem()` enforces that with a
   `WHERE status = 'flagged'` clause, not just in the UI.
-- 4c (letter generator), 4d (dispute tracker), and 4e (education library)
-  are not built yet. `CreditLabSubNav` shows them as "coming soon."
+- Letter generator, dispute tracker, and education library are not built
+  yet. `CreditRoomSubNav` shows them as "coming soon."
 
 ## What's real right now
 
@@ -132,13 +158,12 @@ Run both checks together with `npm run compliance:check`.
 - `/dashboard` — protected; visiting it while signed out redirects to sign-in
   automatically (this is the middleware doing its job)
 - Client status model (Applicant/Accepted/Paid) — stored in Postgres,
-  mirrored to Clerk, gates the Credit Lab server-side (see above)
-- CHEW Credit Lab guardrail framework — standing disclosures, attestation
-  gate, and compliance-copy/no-transmission checks, all backed by Postgres
-  (see above)
-- Credit Lab Report Walkthrough (4a) and Self-Flagging Tool (4b) — real,
-  backed by Postgres. Letter generator, tracker, and education library
-  (4c–4e) are not built yet.
+  mirrored to Clerk, gates The Lab and its rooms server-side (see above)
+- CHEW: The Lab — room picker hub (`/dashboard/lab`) with six rooms; Credit
+  is fully real (guardrail framework, Report Walkthrough, Self-Flagging
+  Tool, all backed by Postgres). The other five rooms are honest "coming to
+  your Lab" placeholders. The guided-tour onboarding and the richer
+  goal/progress hub design are not built yet.
 - Brand styling — matches joinchew.com's colors and fonts already
 
 ## What's next (not built yet, on purpose)

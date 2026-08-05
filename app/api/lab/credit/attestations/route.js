@@ -1,22 +1,24 @@
-// app/api/credit-lab/attestations/route.js
+// app/api/lab/credit/attestations/route.js
 //
 // The attestation gate's server side. Persists the legal record that the
 // CLIENT attested to a specific item — see lib/attestations.js for the
 // enforcement this backs (recordAttestation, assertItemsAttested). No
-// route here, or anywhere in the Credit Lab, ever sends anything to a
-// bureau — this only ever writes to our own Postgres.
+// route here, or anywhere in The Lab, ever sends anything to a bureau —
+// this only ever writes to our own Postgres.
 //
-// Independently re-checks Credit Lab access — see the same note in
-// app/api/credit-lab/dispute-items/route.js.
+// Independently re-checks Credit room access — see the same note in
+// app/api/lab/credit/dispute-items/route.js.
 
 import { NextResponse } from 'next/server';
-import { getCreditLabAccess } from '../../../../lib/clientStatus';
-import { recordAttestation, AttestationError } from '../../../../lib/attestations';
+import { getRoomAccess } from '../../../../../lib/clientStatus';
+import { getRoom } from '../../../../../lib/rooms';
+import { recordAttestation, AttestationError } from '../../../../../lib/attestations';
 
+const CREDIT_REQUIRED_STATUS = getRoom('credit').requiredStatus;
 const STATUS_BY_CODE = { NOT_FOUND: 404, STATEMENT_MISMATCH: 400, ALREADY_ATTESTED: 409 };
 
 export async function POST(req) {
-  const { user, hasAccess } = await getCreditLabAccess();
+  const { user, hasAccess } = await getRoomAccess(CREDIT_REQUIRED_STATUS);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!hasAccess) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 

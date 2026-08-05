@@ -1,14 +1,14 @@
-// app/dashboard/credit-lab/walkthrough/page.js — Layer 4a: Report Walkthrough.
+// app/dashboard/lab/credit/walkthrough/page.js — Report Walkthrough.
 //
 // Pure education: how to pull your own free reports, and what each section
 // means in plain English. No DB reads/writes here — nothing to persist for
-// a walkthrough. Gated by app/dashboard/credit-lab/layout.js like every
-// other Credit Lab route. Accuracy guard in the copy itself: every section
+// a walkthrough. Gated by app/dashboard/lab/credit/layout.js like every
+// other Credit room route. Accuracy guard in the copy itself: every section
 // below describes what a field IS, never whether a given entry looks
-// "wrong" — that judgment call stays with the client (Layer 4b).
+// "wrong" — that judgment call stays with the client (see Flag Items).
 
-import PageHeader from '../../../components/PageHeader';
-import CreditLabSubNav from '../../../components/credit-lab/CreditLabSubNav';
+import PageHeader from '../../../../components/PageHeader';
+import CreditRoomSubNav from '../../../../components/lab/credit/CreditRoomSubNav';
 
 const STEPS = [
   {
@@ -92,16 +92,16 @@ const STEPS = [
   },
 ];
 
-export default function CreditLabWalkthroughPage() {
+export default function CreditWalkthroughPage() {
   return (
     <>
       <PageHeader
-        eyebrow="CHEW Credit Lab"
+        eyebrow="The Lab · Credit"
         title="Report Walkthrough"
         description="How to pull your own credit reports and read each section, in plain English."
       />
 
-      <CreditLabSubNav />
+      <CreditRoomSubNav />
 
       {STEPS.map((step) => (
         <div key={step.title} className="card" style={{ marginBottom: '16px' }}>
@@ -114,7 +114,7 @@ export default function CreditLabWalkthroughPage() {
       <div className="alert">
         <span>
           Once you&apos;ve been through all three reports, you&apos;re ready to{' '}
-          <a href="/dashboard/credit-lab/flag">flag anything you don&apos;t recognize or didn&apos;t
+          <a href="/dashboard/lab/credit/flag">flag anything you don&apos;t recognize or didn&apos;t
           authorize</a>. You decide what gets flagged; CHEW never decides for you.
         </span>
       </div>

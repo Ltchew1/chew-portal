@@ -1,6 +1,6 @@
-// app/components/credit-lab/FlagItemForm.js — Layer 4b: Self-Flagging Tool.
+// app/components/lab/credit/FlagItemForm.js — Self-Flagging Tool.
 //
-// Creates a dispute_items row via app/api/credit-lab/dispute-items/route.js.
+// Creates a dispute_items row via app/api/lab/credit/dispute-items/route.js.
 // The reason radios have no default checked value — the client must
 // actively pick one; nothing here pre-selects or suggests a reason
 // (client-decision enforcement). Flagging an item is a separate, earlier
@@ -39,7 +39,7 @@ export default function FlagItemForm() {
     setError(null);
     setJustFlagged(false);
     try {
-      const res = await fetch('/api/credit-lab/dispute-items', {
+      const res = await fetch('/api/lab/credit/dispute-items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bureau, creditorName, accountNumber, reason, clientNotes }),

@@ -1,9 +1,9 @@
-// app/components/credit-lab/CreditLabSubNav.js
+// app/components/lab/credit/CreditRoomSubNav.js
 //
-// In-module navigation for the Credit Lab's five sub-features (Layer 4a-4e).
-// Only links to routes that actually exist; the rest render as plain
-// "coming soon" badges — same honest pattern as the rest of the portal
-// (see NAV_ITEMS leading to stub pages) rather than linking to a 404.
+// In-module navigation for the Credit room's sub-features. Only links to
+// routes that actually exist; the rest render as plain "coming soon"
+// badges — same honest pattern as the rest of the portal (see NAV_ITEMS
+// leading to stub pages) rather than linking to a 404.
 
 'use client';
 
@@ -11,14 +11,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const LINKS = [
-  { label: 'Overview', href: '/dashboard/credit-lab' },
-  { label: 'Report Walkthrough', href: '/dashboard/credit-lab/walkthrough' },
-  { label: 'Flag Items', href: '/dashboard/credit-lab/flag' },
+  { label: 'Overview', href: '/dashboard/lab/credit' },
+  { label: 'Report Walkthrough', href: '/dashboard/lab/credit/walkthrough' },
+  { label: 'Flag Items', href: '/dashboard/lab/credit/flag' },
 ];
 
 const COMING_SOON = ['Letter Generator', 'Dispute Tracker', 'Education Library'];
 
-export default function CreditLabSubNav() {
+export default function CreditRoomSubNav() {
   const pathname = usePathname();
 
   return (

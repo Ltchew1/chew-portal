@@ -1,28 +1,24 @@
-// app/api/credit-lab/dispute-items/route.js
+// app/api/lab/credit/dispute-items/route.js
 //
 // Create/list the client's own flagged items. Every field on create is
 // client-authored — there is no system classification anywhere in this
 // route, and the DB schema has no column for one (see db/schema.sql).
 //
-// This route is intentionally minimal: it exists so the Layer 3 guardrails
-// (the attestation gate, specifically) have real items to attest to and
-// can be verified end-to-end. Layer 4b replaces the bare client-side form
-// that calls this with the full self-flagging tool, built on this same
-// endpoint — not a duplicate of it.
-//
-// Independently re-checks Credit Lab access — this route sits outside the
-// app/dashboard/credit-lab page tree, so the page-level gate in
-// app/dashboard/credit-lab/layout.js does not protect it.
+// Independently re-checks Credit room access — this route sits outside the
+// app/dashboard/lab/credit page tree, so the page-level gate in
+// app/dashboard/lab/credit/layout.js does not protect it.
 
 import { NextResponse } from 'next/server';
-import { getCreditLabAccess } from '../../../../lib/clientStatus';
-import { createDisputeItem, listDisputeItemsForUser } from '../../../../lib/disputeItems';
+import { getRoomAccess } from '../../../../../lib/clientStatus';
+import { getRoom } from '../../../../../lib/rooms';
+import { createDisputeItem, listDisputeItemsForUser } from '../../../../../lib/disputeItems';
 
+const CREDIT_REQUIRED_STATUS = getRoom('credit').requiredStatus;
 const VALID_BUREAUS = ['equifax', 'experian', 'transunion'];
 const VALID_REASONS = ['not_mine', 'not_authorized'];
 
 export async function GET() {
-  const { user, hasAccess } = await getCreditLabAccess();
+  const { user, hasAccess } = await getRoomAccess(CREDIT_REQUIRED_STATUS);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!hasAccess) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
@@ -31,7 +27,7 @@ export async function GET() {
 }
 
 export async function POST(req) {
-  const { user, hasAccess } = await getCreditLabAccess();
+  const { user, hasAccess } = await getRoomAccess(CREDIT_REQUIRED_STATUS);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!hasAccess) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
