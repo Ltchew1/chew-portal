@@ -77,38 +77,57 @@ New accounts default to `applicant` (nothing to run for that case).
 The Lab (`/dashboard/lab`, Accepted status required just to see the room
 picker) is a hub of focused "rooms," each a different part of a client's
 financial infrastructure. `lib/rooms.js` is the single source of truth for
-every room — name, icon, tagline, route, required status, and whether it's
-actually built — read by the hub's room picker, each room's sub-nav, and
-each room's access gate alike.
+every room — name, icon, tagline, feature list, route, required status,
+and whether it's actually built — read by the hub's room picker, each
+room's sub-nav, and each room's access gate alike. Seven rooms today
+(Credit, Credit Builder, Business, Funding, Financial Intelligence, Money
+Systems, Referral Hub); adding another later (Real Estate, Land, ...) is
+one more entry in that array plus a matching route folder — the grid
+(`auto-fit` + `grid-auto-flow: dense`) and the shared `RoomGate`/
+`RoomComingSoon` components scale to any count without layout changes.
+
+Each room's `features` array is a real, specific teaser of what's coming
+— e.g. Credit lists "Disputes — all 3 bureaus + secondaries," "Furnisher
+disputes," "Method of Verification (MOV) requests," "CFPB & FTC
+escalation paths." These are planned features named specifically, not
+vague marketing copy — `built: false` stays honest until they exist.
 
 ### The hub design system — glass, gold light, gallery composition
 
 The hub (`app/dashboard/lab/page.js`) is styled as a "gallery wall": Credit
 (the one built room) is featured — spans two grid columns on tablet+, an
-"Available now" badge, a stronger resting glow, a larger icon badge — while
-the five unbuilt rooms render as muted, desaturated "dormant" tiles so the
-one real destination is unmistakable at a glance, never competing with
-placeholders for attention.
+"Available now" badge, a stronger resting glow, a larger icon badge, a
+slow light sweep across the tile, a breathing glow on its "Enter" text —
+while the six unbuilt rooms render as muted, desaturated "dormant" tiles
+so the one real destination is unmistakable at a glance, never competing
+with placeholders for attention.
 
 - **Glass/obsidian tiles** (`.room-tile` in `app/globals.css`) — layered
   charcoal-to-black gradient, `backdrop-filter: blur(20px) saturate(1.1)`,
   an inset top highlight, and a soft radial gold tint anchored top-left.
-  The gold hairline border and glow only bloom on hover/focus — resting
-  state is quiet, hover is where it "ignites."
+  The gold hairline border and glow bloom further on hover/focus, with a
+  distinct `:active` press state (scale down, faster transition) for
+  tactile feedback — resting state is quiet, hover is where it "ignites."
 - **A lit environment** (`.lab-hub-bg`) — layered radial gold-light
   gradients behind the hub content plus a whisper-fine SVG-noise grain
   (`opacity: 0.035`, blended with `mix-blend-mode: overlay`) so the
-  gradients don't band and the space reads as lit, not flat.
+  gradients don't band and the space reads as lit, not flat. The access
+  row has its own soft focal-glow spotlight behind the ring.
 - **`GoldProgressRing`** (`app/components/lab/GoldProgressRing.js`) — an
   animated gold ring that fills on mount. The hub uses it to show rooms
   *ready to enter* — built AND status-unlocked, not just status-unlocked —
-  so it can never overclaim ("6 of 6 rooms open" would be false for a Paid
-  client when 5 of those 6 have no content yet).
+  so it can never overclaim ("7 of 7 rooms open" would be false for a Paid
+  client when only 1 of those 7 has content).
 - **`RevealOnScroll`** (`app/components/lab/RevealOnScroll.js`) — staggers
   each room tile's fade-rise-in via `IntersectionObserver`, polymorphic
   enough to render as the tile's own `<Link>` (built + unlocked rooms) or a
   plain `<div>` (locked/unbuilt), so there's no extra wrapper duplicating
   the tile's visual classes around an inner link.
+- **Feature teaser lists** (`.room-feature-list`) — `flex-grow` absorbs
+  leftover card height (not the tagline), so the "Enter"/"Coming to your
+  Lab" affordance stays bottom-aligned across a row even when rooms list
+  different numbers of features (Business lists 6, Financial Intelligence
+  lists 3).
 
 An unbuilt-but-status-unlocked room (e.g. Business for a Paid client)
 shows "Coming to your Lab" with **no lock icon** — a lock there would
@@ -212,13 +231,14 @@ Run both checks together with `npm run compliance:check`.
 - Client status model (Applicant/Accepted/Paid) — stored in Postgres,
   mirrored to Clerk, gates The Lab and its rooms server-side (see above)
 - CHEW: The Lab — glass-and-gold room picker hub (`/dashboard/lab`) with
-  six rooms; Credit is fully real (guardrail framework, Report Walkthrough,
-  Self-Flagging Tool, all backed by Postgres). The other five rooms are
-  honest "coming to your Lab" placeholders. The first-visit guided tour is
-  real and persisted (see above), and correctly distinguishes "just
-  finished the tour" from a true return visit. There's no goal-setting
-  feature yet, so the hub shows real, computed room-access progress (rooms
-  ready to enter) rather than a fabricated "goal."
+  seven rooms; Credit is fully real (guardrail framework, Report
+  Walkthrough, Self-Flagging Tool, all backed by Postgres). The other six
+  rooms are honest "coming to your Lab" placeholders with specific,
+  real feature teasers. The first-visit guided tour is real and persisted
+  (see above), and correctly distinguishes "just finished the tour" from a
+  true return visit. There's no goal-setting feature yet, so the hub shows
+  real, computed room-access progress (rooms ready to enter) rather than a
+  fabricated "goal."
 - Brand styling — matches joinchew.com's colors and fonts already
 
 ## What's next (not built yet, on purpose)

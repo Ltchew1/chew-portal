@@ -34,10 +34,24 @@ function RoomTileBody({ room, unlocked, enterable }) {
   const Icon = room.icon;
   return (
     <>
-      {room.slug === 'credit' && <span className="room-badge">Available now</span>}
+      {room.slug === 'credit' && (
+        <>
+          <span className="room-badge">Available now</span>
+          <span className="room-shimmer" aria-hidden="true" />
+        </>
+      )}
       <div className="room-icon-badge"><Icon /></div>
       <h3>{room.name}</h3>
       <p className="room-tile-tagline">{room.tagline}</p>
+
+      {room.features?.length > 0 && (
+        <ul className="room-feature-list">
+          {room.features.map((feature) => (
+            <li key={feature}>{feature}</li>
+          ))}
+        </ul>
+      )}
+
       <span className="enter-affordance">
         {!room.built
           ? 'Coming to your Lab'

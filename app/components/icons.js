@@ -123,3 +123,12 @@ export const IconGears = (p) => (
     <path d="M16 5.1V3.5M16 9.5V11M14.1 6.4l-1.3-.9M17.9 8.6l1.3.9M14.1 8.6l-1.3.9M17.9 6.4l1.3-.9" />
   </svg>
 );
+
+export const IconReferral = (p) => (
+  <svg {...base(p)}>
+    <circle cx="6" cy="12" r="3" />
+    <circle cx="18" cy="5.5" r="2.6" />
+    <circle cx="18" cy="18.5" r="2.6" />
+    <path d="M8.6 10.6 15.6 7M8.6 13.4l7 3.6" />
+  </svg>
+);
