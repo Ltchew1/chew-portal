@@ -13,6 +13,7 @@ import { usePathname } from 'next/navigation';
 const LINKS = [
   { label: 'Overview', href: '/dashboard/credit-lab' },
   { label: 'Report Walkthrough', href: '/dashboard/credit-lab/walkthrough' },
+  { label: 'Flag Items', href: '/dashboard/credit-lab/flag' },
 ];
 
 const COMING_SOON = ['Letter Generator', 'Dispute Tracker', 'Education Library'];

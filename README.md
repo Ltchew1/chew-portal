@@ -114,9 +114,17 @@ Run both checks together with `npm run compliance:check`.
   what each report section means in plain English. Pure education, no DB
   reads/writes. Copy describes what each field *is*, never whether a given
   entry looks wrong — that stays the client's call (accuracy guard).
-- 4b (self-flagging tool), 4c (letter generator), 4d (dispute tracker), and
-  4e (education library) are not built yet. `CreditLabSubNav` shows them as
-  "coming soon."
+- **4b — Self-Flagging Tool** (`/dashboard/credit-lab/flag`) —
+  `FlagItemForm.js` creates a flagged item (bureau, creditor, account
+  number, reason — reason radios have no default, the client must actively
+  pick one); `AttestationGate.js` lists everything flagged so far and is
+  where the client attests. Flagging and attesting are two separate,
+  deliberate actions, not one click. An unattested item can be removed
+  (`DELETE /api/credit-lab/dispute-items/[id]`) to fix a mistake — once
+  attested, it can't be; `deleteUnattestedItem()` enforces that with a
+  `WHERE status = 'flagged'` clause, not just in the UI.
+- 4c (letter generator), 4d (dispute tracker), and 4e (education library)
+  are not built yet. `CreditLabSubNav` shows them as "coming soon."
 
 ## What's real right now
 
@@ -128,10 +136,9 @@ Run both checks together with `npm run compliance:check`.
 - CHEW Credit Lab guardrail framework — standing disclosures, attestation
   gate, and compliance-copy/no-transmission checks, all backed by Postgres
   (see above)
-- Credit Lab Report Walkthrough (4a) — real, plain-English content. The
-  self-flagging tool, letter generator, tracker, and education library
-  (4b–4e) are not built yet — the overview page currently has only a bare
-  placeholder form for testing the attestation gate.
+- Credit Lab Report Walkthrough (4a) and Self-Flagging Tool (4b) — real,
+  backed by Postgres. Letter generator, tracker, and education library
+  (4c–4e) are not built yet.
 - Brand styling — matches joinchew.com's colors and fonts already
 
 ## What's next (not built yet, on purpose)

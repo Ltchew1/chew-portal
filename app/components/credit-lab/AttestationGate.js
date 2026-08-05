@@ -11,6 +11,11 @@
 // must never be trusted as the enforcement point itself — Layer 4c's
 // letter generator has to call assertItemsAttested() server-side before
 // generating anything, regardless of what this component shows on screen.
+//
+// Unattested items can be removed (fixing a mistake before it becomes
+// part of the permanent record) — attested items cannot; the Remove
+// button doesn't even render for them, and the DELETE route enforces the
+// same boundary server-side regardless.
 
 'use client';
 
@@ -21,8 +26,9 @@ import { ATTESTATION_STATEMENTS } from '../../../lib/creditLabCompliance';
 const BUREAU_LABELS = { equifax: 'Equifax', experian: 'Experian', transunion: 'TransUnion' };
 const REASON_LABELS = { not_mine: "Don't recognize", not_authorized: "Didn't authorize" };
 
-function ItemRow({ item, onAttested }) {
+function ItemRow({ item, onAttested, onRemoved }) {
   const [attesting, setAttesting] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const [error, setError] = useState(null);
   const attested = Boolean(item.attested_at);
   const statement = ATTESTATION_STATEMENTS[item.reason];
@@ -47,6 +53,21 @@ function ItemRow({ item, onAttested }) {
     }
   }
 
+  async function handleRemove() {
+    if (attested || removing) return;
+    setRemoving(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/credit-lab/dispute-items/${item.id}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Could not remove this item.');
+      onRemoved(item.id);
+    } catch (err) {
+      setError(err.message);
+      setRemoving(false);
+    }
+  }
+
   return (
     <div className="card" style={{ marginBottom: '12px' }}>
       <div className="flex-between" style={{ marginBottom: '10px' }}>
@@ -57,7 +78,13 @@ function ItemRow({ item, onAttested }) {
             {item.account_number ? ` · ${item.account_number}` : ''}
           </div>
         </div>
-        {attested && <span className="badge badge-success">Attested</span>}
+        {attested ? (
+          <span className="badge badge-success">Attested</span>
+        ) : (
+          <button type="button" className="btn btn-outline btn-sm" onClick={handleRemove} disabled={removing}>
+            {removing ? 'Removing…' : 'Remove'}
+          </button>
+        )}
       </div>
 
       <label
@@ -94,6 +121,10 @@ export default function AttestationGate({ items }) {
     setLocalItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, attested_at: attestedAt } : i)));
   }
 
+  function handleRemoved(itemId) {
+    setLocalItems((prev) => prev.filter((i) => i.id !== itemId));
+  }
+
   const attestedCount = localItems.filter((i) => i.attested_at).length;
   const allAttested = localItems.length > 0 && attestedCount === localItems.length;
 
@@ -101,18 +132,22 @@ export default function AttestationGate({ items }) {
     <div style={{ marginTop: '20px' }}>
       <StandingDisclosures variant="pre-generation" />
 
-      <div style={{ marginTop: '20px' }}>
-        {localItems.map((item) => (
-          <ItemRow key={item.id} item={item} onAttested={handleAttested} />
-        ))}
-      </div>
+      {localItems.length > 0 && (
+        <div style={{ marginTop: '20px' }}>
+          {localItems.map((item) => (
+            <ItemRow key={item.id} item={item} onAttested={handleAttested} onRemoved={handleRemoved} />
+          ))}
+        </div>
+      )}
 
-      <p className="text-faint" style={{ fontSize: '0.85rem', marginTop: '4px' }}>
-        {attestedCount} of {localItems.length} items attested.{' '}
-        {allAttested
-          ? "Letter generation isn't built yet (Layer 4c) — once it is, it only unlocks here once every item above is attested."
-          : "Check each statement above to attest — a letter can't be generated for an item until you do."}
-      </p>
+      {localItems.length > 0 && (
+        <p className="text-faint" style={{ fontSize: '0.85rem', marginTop: '4px' }}>
+          {attestedCount} of {localItems.length} items attested.{' '}
+          {allAttested
+            ? "Letter generation isn't built yet (Layer 4c) — once it is, it only unlocks here once every item above is attested."
+            : "Check each statement above to attest — a letter can't be generated for an item until you do."}
+        </p>
+      )}
     </div>
   );
 }

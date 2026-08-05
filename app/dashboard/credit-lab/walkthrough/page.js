@@ -113,10 +113,9 @@ export default function CreditLabWalkthroughPage() {
 
       <div className="alert">
         <span>
-          Once you&apos;ve been through all three reports, you&apos;re ready to flag anything you
-          don&apos;t recognize or didn&apos;t authorize — on the{' '}
-          <a href="/dashboard/credit-lab">Credit Lab overview</a>. You decide what gets flagged;
-          CHEW never decides for you.
+          Once you&apos;ve been through all three reports, you&apos;re ready to{' '}
+          <a href="/dashboard/credit-lab/flag">flag anything you don&apos;t recognize or didn&apos;t
+          authorize</a>. You decide what gets flagged; CHEW never decides for you.
         </span>
       </div>
     </>

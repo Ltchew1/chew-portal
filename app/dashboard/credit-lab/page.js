@@ -1,27 +1,23 @@
 // app/dashboard/credit-lab/page.js
 //
-// Credit Lab module entry point. The guardrail components
-// (StandingDisclosures, AttestationGate) are real and wired to the real
-// database via lib/disputeItems.js, gated by
-// app/dashboard/credit-lab/layout.js. BareFlagForm is a deliberate
-// placeholder (see its file comment) that Layer 4b replaces with the full
-// self-flagging tool. Layer 4a (Report Walkthrough) lives at
-// ./walkthrough — linked via CreditLabSubNav below. The letter generator,
-// tracker, and education library (Layers 4c–4e) aren't here yet.
+// Credit Lab module entry point / summary. Gated by
+// app/dashboard/credit-lab/layout.js. Links out to the two built
+// sub-features (Report Walkthrough — Layer 4a, Flag Items — Layer 4b);
+// the letter generator, tracker, and education library (4c–4e) aren't
+// built yet, shown as "coming soon" in CreditLabSubNav.
 
 import { currentUser } from '@clerk/nextjs/server';
+import Link from 'next/link';
 import PageHeader from '../../components/PageHeader';
-import EmptyState from '../../components/EmptyState';
 import StandingDisclosures from '../../components/credit-lab/StandingDisclosures';
-import AttestationGate from '../../components/credit-lab/AttestationGate';
-import BareFlagForm from '../../components/credit-lab/BareFlagForm';
 import CreditLabSubNav from '../../components/credit-lab/CreditLabSubNav';
-import { IconScale } from '../../components/icons';
+import { IconBook, IconScale, IconChevronRight } from '../../components/icons';
 import { listDisputeItemsForUser } from '../../../lib/disputeItems';
 
 export default async function CreditLabPage() {
   const user = await currentUser();
   const items = await listDisputeItemsForUser(user.id);
+  const attestedCount = items.filter((i) => i.attested_at).length;
 
   return (
     <>
@@ -35,17 +31,33 @@ export default async function CreditLabPage() {
 
       <StandingDisclosures variant="entry" />
 
-      {items.length === 0 ? (
-        <EmptyState
-          icon={<IconScale />}
-          title="You haven't flagged anything yet"
-          description="Start with the Report Walkthrough above if you haven't pulled your reports yet. The full self-flagging tool is coming in the next build layer — use the form below to flag a test item and try the attestation gate."
-        />
-      ) : (
-        <AttestationGate items={items} />
-      )}
+      <div className="card-grid">
+        <Link href="/dashboard/credit-lab/walkthrough" className="card" style={{ color: 'inherit' }}>
+          <div className="card-icon"><IconBook /></div>
+          <h3>Report Walkthrough</h3>
+          <p style={{ fontSize: '0.88rem' }}>
+            Pull your free reports from all three bureaus and learn what each section means.
+          </p>
+          <span className="flex-between" style={{ marginTop: '8px' }}>
+            <span className="text-faint" style={{ fontSize: '0.82rem' }}>Start here</span>
+            <IconChevronRight />
+          </span>
+        </Link>
 
-      <BareFlagForm />
+        <Link href="/dashboard/credit-lab/flag" className="card" style={{ color: 'inherit' }}>
+          <div className="card-icon"><IconScale /></div>
+          <h3>Flag Items</h3>
+          <p style={{ fontSize: '0.88rem' }}>
+            Mark accounts you don&apos;t recognize or didn&apos;t authorize, and attest to each one.
+          </p>
+          <span className="flex-between" style={{ marginTop: '8px' }}>
+            <span className="text-faint" style={{ fontSize: '0.82rem' }}>
+              {items.length === 0 ? 'Not started' : `${attestedCount} of ${items.length} attested`}
+            </span>
+            <IconChevronRight />
+          </span>
+        </Link>
+      </div>
     </>
   );
 }
