@@ -81,6 +81,23 @@ every room — name, icon, tagline, route, required status, and whether it's
 actually built — read by the hub's room picker, each room's sub-nav, and
 each room's access gate alike.
 
+### First-visit guided tour
+
+A client's first time reaching `/dashboard/lab` (once they clear the
+Accepted gate), they see a short cinematic welcome
+(`app/components/lab/tour/TourExperience.js`) instead of the room picker —
+four steps, gold-line reveal, a glowing primary CTA — before "Enter The
+Lab" hands them into the hub. Every return visit skips straight to the
+hub. `users.has_completed_tour` (added to Layer 1's schema, `ADD COLUMN IF
+NOT EXISTS` so `npm run db:migrate` picks it up on an existing database)
+is the persisted flag; `POST /api/lab/tour/complete` sets it, then the
+client calls `router.refresh()` so the same Server Component re-renders as
+the hub instead — no separate tour URL.
+
+Each tour step carries an inert `voiceoverId` (`tourSteps.js`) — a clean,
+unused hook for an AI-voiceover pass later. The tour never waits on audio
+to advance today.
+
 | Room | Route | Required status | Built |
 |---|---|---|---|
 | Credit | `/dashboard/lab/credit` | Paid | Yes |
@@ -162,8 +179,10 @@ Run both checks together with `npm run compliance:check`.
 - CHEW: The Lab — room picker hub (`/dashboard/lab`) with six rooms; Credit
   is fully real (guardrail framework, Report Walkthrough, Self-Flagging
   Tool, all backed by Postgres). The other five rooms are honest "coming to
-  your Lab" placeholders. The guided-tour onboarding and the richer
-  goal/progress hub design are not built yet.
+  your Lab" placeholders. The first-visit guided tour is real and persisted
+  (see above). The richer goal/progress hub design is not built yet — the
+  tour currently hands off straight to the plain room-picker grid from the
+  rename checkpoint.
 - Brand styling — matches joinchew.com's colors and fonts already
 
 ## What's next (not built yet, on purpose)

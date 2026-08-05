@@ -1,17 +1,21 @@
 // app/dashboard/lab/page.js
 //
-// The Lab hub: the room picker. This checkpoint (rename/restructure) ships
-// it as a straightforward grid — the cinematic tour and goal/progress
-// dashboard land in later checkpoints. Every built, unlocked room links
-// out to its own route; status-locked or not-yet-built rooms say so
-// plainly (rendered as a non-interactive card, not a dead link).
+// The Lab hub. First-time visitors (has_completed_tour = false) see the
+// cinematic entrance (TourExperience) instead of the room picker; everyone
+// else lands straight on it — "The Lab remembers you." Same URL both
+// times; TourExperience marks the tour complete and refreshes this Server
+// Component, which then renders the hub. The goal/progress dashboard the
+// tour promises between itself and the room picker isn't built yet — next
+// checkpoint.
 
 import { currentUser } from '@clerk/nextjs/server';
 import Link from 'next/link';
 import PageHeader from '../../components/PageHeader';
+import TourExperience from '../../components/lab/tour/TourExperience';
 import { IconChevronRight, IconLock } from '../../components/icons';
 import { ROOMS } from '../../../lib/rooms';
 import { statusFromClerkUser, hasRequiredStatus } from '../../../lib/clientStatus';
+import { hasCompletedTour } from '../../../lib/tour';
 
 const STATUS_LABELS = { applicant: 'Applicant', accepted: 'Accepted', paid: 'Paid' };
 
@@ -39,12 +43,17 @@ function RoomCardBody({ room, unlocked, enterable }) {
 export default async function LabHubPage() {
   const user = await currentUser();
   const status = statusFromClerkUser(user);
+  const toured = await hasCompletedTour(user.id);
+
+  if (!toured) {
+    return <TourExperience firstName={user.firstName || 'there'} />;
+  }
 
   return (
     <>
       <PageHeader
         eyebrow="CHEW"
-        title="CHEW: The Lab"
+        title="Welcome back."
         description="Your rooms — each one a focused space for a different part of your financial infrastructure."
       />
 

@@ -31,6 +31,11 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Added post-Layer-1: whether this client has completed the first-visit
+-- guided tour at /dashboard/lab (see lib/tour.js). ADD COLUMN IF NOT
+-- EXISTS keeps this file safe to re-run like everything above it.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS has_completed_tour BOOLEAN NOT NULL DEFAULT false;
+
 -- Append-only status history. Current status for a user = the row with the
 -- latest created_at (see lib/clientStatus.js). Never UPDATE or DELETE rows
 -- here — insert a new one to change status, so the history stays intact.
