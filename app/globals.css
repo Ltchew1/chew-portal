@@ -458,6 +458,225 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
 
 .btn-glow { animation: gold-glow-pulse 2.6s ease-in-out infinite; }
 
+/* ---------- The Lab: hub / room gallery ---------- */
+
+@keyframes reveal-rise {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes ring-fade-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* The lit environment: layered radial gold light + a whisper-fine grain
+   behind the hub content, instead of a flat black void. Scoped to the hub
+   only. The grain is deliberately near-invisible (opacity 0.035) — enough
+   to stop the gradients from banding and add a little tactile richness,
+   never enough to read as "gritty." */
+.lab-hub-bg {
+  position: relative;
+  padding: 4px 4px 8px;
+  margin: -4px -4px 0;
+}
+.lab-hub-bg::before,
+.lab-hub-bg::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+}
+.lab-hub-bg::before {
+  inset: -60px -60px -20%;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 0%, rgba(200,166,60,0.22) 0%, transparent 62%),
+    radial-gradient(ellipse 45% 40% at 92% 10%, rgba(74,147,181,0.1) 0%, transparent 65%),
+    radial-gradient(ellipse 55% 65% at 50% 105%, rgba(200,166,60,0.09) 0%, transparent 70%);
+}
+.lab-hub-bg::after {
+  inset: -60px -60px -20%;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.lab-hub-bg > * { position: relative; z-index: 1; }
+
+.lab-hero-eyebrow {
+  display: block;
+  font-size: 0.74rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold-light);
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.lab-hero-title {
+  font-size: clamp(2rem, 5vw, 3rem);
+  margin-bottom: 10px;
+}
+.lab-hero-desc {
+  color: var(--text-faint);
+  font-size: 1rem;
+  max-width: 56ch;
+  margin-bottom: 8px;
+}
+
+/* Access ring + room gallery share this stage spacing */
+.lab-access-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin: 28px 0 40px;
+  padding: 20px 24px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--panel-border);
+  background: linear-gradient(160deg, rgba(200,166,60,0.05), rgba(0,0,0,0) 60%), var(--black-soft);
+}
+.lab-access-copy strong { display: block; color: var(--text); font-size: 0.98rem; margin-bottom: 4px; }
+.lab-access-copy span { color: var(--text-faint); font-size: 0.85rem; }
+
+.room-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 22px;
+  margin-top: 8px;
+}
+
+.room-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 32px 28px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--panel-border);
+  background:
+    linear-gradient(155deg, rgba(255,255,255,0.06), rgba(255,255,255,0) 30%),
+    linear-gradient(165deg, var(--black-elev) 0%, var(--black-soft) 75%, #0d0c0a 100%);
+  box-shadow: 0 20px 44px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05), inset 0 0 60px rgba(0,0,0,0.25);
+  backdrop-filter: blur(20px) saturate(1.1);
+  -webkit-backdrop-filter: blur(20px) saturate(1.1);
+  overflow: hidden;
+  text-align: left;
+  color: inherit;
+  opacity: 0;
+  transform: translateY(24px);
+  transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.7s ease;
+}
+.room-tile.revealed { opacity: 1; transform: translateY(0); }
+.room-tile::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 22% -15%, rgba(200,166,60,0.16), transparent 55%);
+  opacity: 0.65;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+a.room-tile:hover,
+a.room-tile:focus-visible {
+  transform: translateY(-7px) scale(1.008);
+  border-color: rgba(200,166,60,0.55);
+  box-shadow: 0 34px 70px rgba(0,0,0,0.6), 0 0 0 1px rgba(200,166,60,0.3), 0 0 48px rgba(200,166,60,0.22);
+}
+a.room-tile:hover::after { opacity: 1; }
+
+.room-tile--featured {
+  border-color: rgba(200,166,60,0.42);
+  box-shadow: 0 22px 52px rgba(0,0,0,0.55), 0 0 46px rgba(200,166,60,0.16), inset 0 1px 0 rgba(255,255,255,0.07), inset 0 0 60px rgba(0,0,0,0.25);
+}
+.room-tile--featured::after { opacity: 0.95; }
+@media (min-width: 760px) {
+  .room-tile--featured { grid-column: span 2; }
+}
+
+.room-tile--dormant { filter: saturate(0.65); }
+.room-tile--dormant .room-icon-badge { opacity: 0.7; }
+
+.room-icon-badge {
+  width: 54px; height: 54px;
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(145deg, rgba(200,166,60,0.2), rgba(200,166,60,0.04));
+  border: 1px solid var(--panel-border);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -6px 12px rgba(0,0,0,0.25);
+  color: var(--gold-light);
+  margin-bottom: 20px;
+}
+.room-tile--featured .room-icon-badge {
+  width: 60px; height: 60px;
+  background: linear-gradient(145deg, rgba(200,166,60,0.4), rgba(200,166,60,0.1));
+  border-color: rgba(200,166,60,0.48);
+}
+
+.room-badge {
+  position: absolute;
+  top: 22px; right: 22px;
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--gold-light);
+  background: rgba(200,166,60,0.13);
+  border: 1px solid rgba(200,166,60,0.32);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.room-tile h3 { margin-bottom: 6px; font-size: 1.15rem; }
+.room-tile-tagline { font-size: 0.89rem; color: var(--text-faint); margin-bottom: 22px; flex-grow: 1; }
+
+.enter-affordance {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--gold-light);
+}
+.enter-affordance svg { transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
+a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
+
+.room-tile--featured .enter-affordance { text-shadow: 0 0 18px rgba(228,197,103,0.5); }
+
+.room-tile--locked .enter-affordance { color: var(--text-faint); font-weight: 500; }
+
+/* Gold progress ring */
+.gold-ring { position: relative; flex-shrink: 0; animation: ring-fade-in 0.6s ease both; }
+.gold-ring svg { transform: rotate(-90deg); display: block; }
+.gold-ring-track { fill: none; stroke: rgba(245,243,238,0.08); stroke-width: 8; }
+.gold-ring-fill {
+  fill: none;
+  stroke: var(--gold-light);
+  stroke-width: 8;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.gold-ring-label {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.gold-ring-label strong {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem;
+  color: var(--text);
+  line-height: 1;
+}
+.gold-ring-max { font-size: 0.85rem; color: var(--text-faint); font-weight: 400; }
+.gold-ring-caption {
+  font-size: 0.62rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-top: 5px;
+}
+
+@media (max-width: 560px) {
+  .lab-access-row { flex-direction: column; align-items: flex-start; text-align: left; }
+}
+
 /* ---------- Misc ---------- */
 
 .text-faint { color: var(--text-faint); }

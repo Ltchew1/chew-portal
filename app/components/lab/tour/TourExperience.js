@@ -32,7 +32,10 @@ export default function TourExperience({ firstName }) {
       // If this fails, the tour just shows again next visit — harmless,
       // so the client still gets into their Lab today either way.
     }
-    router.refresh();
+    // The query param tells the hub this is the moment right after
+    // finishing, not a true return visit — see page.js's "Welcome back"
+    // seam note. It's read once and never persisted.
+    router.push('/dashboard/lab?justFinishedTour=1');
   }
 
   function handlePrimary() {
