@@ -3,29 +3,45 @@
    used by every page instead of styling each screen on its own. */
 
 :root {
-  /* Brand palette — same tokens as joinchew.com so the portal feels like
-     one product, not a separate app bolted on. */
-  --black: #0A0A0A;
-  --black-soft: #131311;
-  --black-elev: #1A1917;
-  --gold: #C8A63C;
-  --gold-light: #E4C567;
-  --gold-deep: #8F7024;
+  /* Flagship palette (CHEW: The Lab master spec, Part 1 — exact values).
+     Variable names kept from the original joinchew.com token set so the
+     rest of this file didn't need a mass rename; only the underlying hex
+     values changed. Mapping to the spec's own names:
+       --black       = Obsidian #0A0A0B
+       --black-soft  = Vault    #14140F
+       --black-elev  = (third, lighter raised tone — not in the 6-color
+                        spec, kept for layered elements that need a step
+                        beyond Vault, e.g. icon badges/inputs)
+       --gold        = Ember Gold #C9A227
+       --gold-light  = Light Gold #E8CE7A
+       --gold-deep   = (darker Ember Gold, for gradient stops/deep accents)
+       --text        = Bone #F2EEE4
+       --text-faint  = Ash  #8A857A
+     Gold is the light source — used with restraint. The old blue "steel"
+     accent is kept only for the non-decorative focus-visible outline
+     (needs to read as distinct from gold hover/active states); it no
+     longer appears in any brand-colored copy or badge. */
+  --black: #0A0A0B;
+  --black-soft: #14140F;
+  --black-elev: #1C1C15;
+  --gold: #C9A227;
+  --gold-light: #E8CE7A;
+  --gold-deep: #8C6E1E;
   --steel: #2D6F8E;
   --steel-light: #4A93B5;
   --steel-deep: #1D4A5F;
-  --text: #F5F3EE;
-  --text-faint: #9C978A;
-  --text-faintest: #6B675C;
+  --text: #F2EEE4;
+  --text-faint: #8A857A;
+  --text-faintest: #5F5A4E;
   --success: #4A9B6E;
   --success-bg: rgba(74,155,110,0.12);
-  --pending: #C8A63C;
-  --pending-bg: rgba(200,166,60,0.12);
+  --pending: #C9A227;
+  --pending-bg: rgba(201,162,39,0.12);
   --danger: #B5544A;
   --danger-bg: rgba(181,84,74,0.12);
-  --panel-border: rgba(200,166,60,0.18);
-  --panel-border-strong: rgba(200,166,60,0.4);
-  --divider: rgba(245,243,238,0.08);
+  --panel-border: rgba(201,162,39,0.18);
+  --panel-border-strong: rgba(201,162,39,0.4);
+  --divider: rgba(242,238,228,0.08);
 
   --radius-sm: 8px;
   --radius: 14px;
@@ -73,13 +89,13 @@ body::before {
   right: -10%;
   width: 60vw;
   height: 60vw;
-  background: radial-gradient(circle, rgba(200,166,60,0.07) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(201,162,39,0.07) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
 }
 
 h1, h2, h3 {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'Fraunces', Georgia, serif;
   font-weight: 600;
   margin: 0 0 12px;
   letter-spacing: -0.01em;
@@ -120,7 +136,7 @@ a:hover { opacity: 0.8; }
 }
 
 .portal-brand {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Fraunces', serif;
   font-size: 1.2rem;
   color: var(--text);
   display: flex;
@@ -197,9 +213,9 @@ a:hover { opacity: 0.8; }
   white-space: nowrap;
 }
 .sidebar-link svg { flex-shrink: 0; opacity: 0.85; }
-.sidebar-link:hover { background: rgba(200,166,60,0.07); color: var(--text); opacity: 1; }
+.sidebar-link:hover { background: rgba(201,162,39,0.07); color: var(--text); opacity: 1; }
 .sidebar-link.active {
-  background: rgba(200,166,60,0.12);
+  background: rgba(201,162,39,0.12);
   color: var(--gold-light);
   border-color: var(--panel-border-strong);
 }
@@ -237,14 +253,14 @@ a:hover { opacity: 0.8; }
   background: linear-gradient(135deg, var(--gold-light), var(--gold-deep));
   color: var(--black);
 }
-.btn-gold:hover { box-shadow: 0 6px 20px rgba(200,166,60,0.25); }
+.btn-gold:hover { box-shadow: 0 6px 20px rgba(201,162,39,0.25); }
 
 .btn-outline {
   background: transparent;
   border: 1px solid var(--panel-border-strong);
   color: var(--text);
 }
-.btn-outline:hover { background: rgba(245,243,238,0.04); }
+.btn-outline:hover { background: rgba(242,238,228,0.04); }
 
 .btn-sm { padding: 7px 14px; font-size: 0.82rem; }
 
@@ -266,7 +282,7 @@ a:hover { opacity: 0.8; }
   width: 38px; height: 38px;
   display: flex; align-items: center; justify-content: center;
   border-radius: var(--radius-sm);
-  background: rgba(200,166,60,0.1);
+  background: rgba(201,162,39,0.1);
   color: var(--gold-light);
   margin-bottom: 14px;
 }
@@ -296,7 +312,7 @@ a:hover { opacity: 0.8; }
   font-size: 0.72rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--steel-light);
+  color: var(--text-faint);
   font-weight: 600;
   margin-bottom: 6px;
   display: block;
@@ -314,10 +330,10 @@ a:hover { opacity: 0.8; }
   border-radius: 20px;
   border: 1px solid transparent;
 }
-.badge-soon { background: rgba(74,147,181,0.15); color: var(--steel-light); border-color: rgba(74,147,181,0.3); }
+.badge-soon { background: rgba(242,238,228,0.08); color: var(--text-faint); border-color: var(--divider); }
 .badge-success { background: var(--success-bg); color: var(--success); border-color: rgba(74,155,110,0.3); }
 .badge-pending { background: var(--pending-bg); color: var(--gold-light); border-color: var(--panel-border-strong); }
-.badge-neutral { background: rgba(245,243,238,0.06); color: var(--text-faint); border-color: var(--divider); }
+.badge-neutral { background: rgba(242,238,228,0.06); color: var(--text-faint); border-color: var(--divider); }
 
 /* ---------- Empty states ---------- */
 
@@ -333,7 +349,7 @@ a:hover { opacity: 0.8; }
   margin: 0 auto 18px;
   display: flex; align-items: center; justify-content: center;
   border-radius: 50%;
-  background: rgba(200,166,60,0.08);
+  background: rgba(201,162,39,0.08);
   color: var(--gold-light);
 }
 .empty-state h3 { margin-bottom: 8px; }
@@ -370,7 +386,7 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
   display: flex; gap: 12px; align-items: flex-start;
   padding: 14px 18px; border-radius: var(--radius); font-size: 0.85rem;
   border: 1px solid var(--panel-border);
-  background: rgba(200,166,60,0.05);
+  background: rgba(201,162,39,0.05);
   color: var(--text-faint);
 }
 .alert svg { flex-shrink: 0; color: var(--gold-light); margin-top: 1px; }
@@ -390,11 +406,11 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
 
 .progress-track {
   width: 100%; height: 6px; border-radius: 6px;
-  background: rgba(245,243,238,0.08); overflow: hidden;
+  background: rgba(242,238,228,0.08); overflow: hidden;
 }
 .progress-fill {
   height: 100%; border-radius: 6px;
-  background: linear-gradient(90deg, var(--steel), var(--gold));
+  background: linear-gradient(90deg, var(--gold-deep), var(--gold-light));
 }
 
 /* ---------- The Lab: cinematic tour ---------- */
@@ -404,8 +420,8 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
   to { opacity: 1; transform: translateY(0); }
 }
 @keyframes gold-glow-pulse {
-  0%, 100% { box-shadow: 0 6px 20px rgba(200,166,60,0.25); }
-  50% { box-shadow: 0 10px 34px rgba(200,166,60,0.45); }
+  0%, 100% { box-shadow: 0 6px 20px rgba(201,162,39,0.25); }
+  50% { box-shadow: 0 10px 34px rgba(201,162,39,0.45); }
 }
 @keyframes draw-line {
   from { stroke-dashoffset: 80; }
@@ -470,11 +486,18 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
   to { opacity: 1; transform: scale(1); }
 }
 
-/* The lit environment: layered radial gold light + a whisper-fine grain
-   behind the hub content, instead of a flat black void. Scoped to the hub
-   only. The grain is deliberately near-invisible (opacity 0.035) — enough
-   to stop the gradients from banding and add a little tactile richness,
-   never enough to read as "gritty." */
+/* The lit environment: THE LIVING GOLD LIGHT — the one signature element
+   the whole design language turns on. Layered radial glow behind the hub
+   content, instead of a flat black void, plus a whisper-fine grain so the
+   gradients don't band. Deliberately gold-only: no second accent color
+   competes with it, per the "gold is the light source, everything else
+   stays quiet" rule. Grain opacity (0.035) is near-invisible by design —
+   enough for tactile richness, never enough to read as "gritty."
+
+   Hero image hook: when a real hero photo is supplied, it slots in as one
+   more layer in this same background stack (behind the gradients, so the
+   gold light still washes over it) — no markup changes needed, just add
+   e.g. `background-image: url(...), <the gradients below>` to ::before. */
 .lab-hub-bg {
   position: relative;
   padding: 4px 4px 8px;
@@ -490,9 +513,10 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
 .lab-hub-bg::before {
   inset: -60px -60px -20%;
   background:
-    radial-gradient(ellipse 60% 50% at 20% 0%, rgba(200,166,60,0.22) 0%, transparent 62%),
-    radial-gradient(ellipse 45% 40% at 92% 10%, rgba(74,147,181,0.1) 0%, transparent 65%),
-    radial-gradient(ellipse 55% 65% at 50% 105%, rgba(200,166,60,0.09) 0%, transparent 70%);
+    radial-gradient(ellipse 60% 50% at 20% 0%, rgba(201,162,39,0.24) 0%, transparent 62%),
+    radial-gradient(ellipse 45% 40% at 92% 10%, rgba(201,162,39,0.1) 0%, transparent 65%),
+    radial-gradient(ellipse 55% 65% at 50% 105%, rgba(201,162,39,0.09) 0%, transparent 70%);
+  animation: living-glow-breathe 9s ease-in-out infinite;
 }
 .lab-hub-bg::after {
   inset: -60px -60px -20%;
@@ -502,6 +526,45 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
 }
 .lab-hub-bg > * { position: relative; z-index: 1; }
 
+@keyframes living-glow-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.82; }
+}
+
+/* The CHEW mark, featured elegantly at the top of the hero. Deliberately
+   NOT its own glow source — the living gold light behind it (lab-hub-bg)
+   already lights it; a second independent glow here would compete with
+   the one signature element instead of sitting inside it. Just a quiet
+   gold hairline ring. */
+.lab-mark {
+  width: 56px; height: 56px;
+  padding: 11px;
+  margin-bottom: 22px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(201,162,39,0.08);
+  border: 1px solid var(--panel-border-strong);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.lab-mark img { width: 100%; height: 100%; object-fit: contain; }
+
+/* The creed — quiet, reverent, said once. */
+.lab-creed {
+  margin: 56px 0 4px;
+  padding-top: 28px;
+  border-top: 1px solid var(--divider);
+  text-align: center;
+  font-size: 0.72rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold-light);
+  opacity: 0.85;
+}
+
+/* Eyebrow and title carry no glow of their own — they sit inside the one
+   living gold light behind them (lab-hub-bg) and stay quiet themselves.
+   Per the constitution: the signature glow means something specifically
+   because everything around it doesn't also glow. */
 .lab-hero-eyebrow {
   display: block;
   font-size: 0.76rem;
@@ -510,13 +573,11 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
   color: var(--gold-light);
   font-weight: 600;
   margin-bottom: 12px;
-  text-shadow: 0 0 24px rgba(228,197,103,0.35);
 }
 .lab-hero-title {
   position: relative;
   font-size: clamp(2.2rem, 5.5vw, 3.4rem);
   margin-bottom: 10px;
-  text-shadow: 0 0 60px rgba(200,166,60,0.18);
 }
 .lab-hero-desc {
   color: var(--text-faint);
@@ -536,7 +597,7 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
   padding: 20px 24px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--panel-border);
-  background: linear-gradient(160deg, rgba(200,166,60,0.06), rgba(0,0,0,0) 60%), var(--black-soft);
+  background: linear-gradient(160deg, rgba(201,162,39,0.06), rgba(0,0,0,0) 60%), var(--black-soft);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
   overflow: hidden;
 }
@@ -547,7 +608,7 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
   left: -60px; top: 50%;
   width: 220px; height: 220px;
   transform: translateY(-50%);
-  background: radial-gradient(circle, rgba(200,166,60,0.22) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(201,162,39,0.22) 0%, transparent 70%);
   pointer-events: none;
 }
 .lab-access-copy strong { display: block; color: var(--text); font-size: 0.98rem; margin-bottom: 4px; }
@@ -588,7 +649,7 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
 .room-tile::after {
   content: '';
   position: absolute; inset: 0;
-  background: radial-gradient(circle at 22% -15%, rgba(200,166,60,0.16), transparent 55%);
+  background: radial-gradient(circle at 22% -15%, rgba(201,162,39,0.16), transparent 55%);
   opacity: 0.65;
   pointer-events: none;
   transition: opacity 0.5s ease;
@@ -596,8 +657,8 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
 a.room-tile:hover,
 a.room-tile:focus-visible {
   transform: translateY(-7px) scale(1.008);
-  border-color: rgba(200,166,60,0.55);
-  box-shadow: 0 34px 70px rgba(0,0,0,0.6), 0 0 0 1px rgba(200,166,60,0.3), 0 0 48px rgba(200,166,60,0.22);
+  border-color: rgba(201,162,39,0.55);
+  box-shadow: 0 34px 70px rgba(0,0,0,0.6), 0 0 0 1px rgba(201,162,39,0.3), 0 0 48px rgba(201,162,39,0.22);
 }
 a.room-tile:hover::after { opacity: 1; }
 a.room-tile:active {
@@ -606,8 +667,8 @@ a.room-tile:active {
 }
 
 .room-tile--featured {
-  border-color: rgba(200,166,60,0.42);
-  box-shadow: 0 22px 52px rgba(0,0,0,0.55), 0 0 46px rgba(200,166,60,0.16), inset 0 1px 0 rgba(255,255,255,0.07), inset 0 0 60px rgba(0,0,0,0.25);
+  border-color: rgba(201,162,39,0.42);
+  box-shadow: 0 22px 52px rgba(0,0,0,0.55), 0 0 46px rgba(201,162,39,0.16), inset 0 1px 0 rgba(255,255,255,0.07), inset 0 0 60px rgba(0,0,0,0.25);
 }
 .room-tile--featured::after { opacity: 0.95; }
 @media (min-width: 760px) {
@@ -621,7 +682,7 @@ a.room-tile:active {
   width: 54px; height: 54px;
   border-radius: 16px;
   display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(145deg, rgba(200,166,60,0.2), rgba(200,166,60,0.04));
+  background: linear-gradient(145deg, rgba(201,162,39,0.2), rgba(201,162,39,0.04));
   border: 1px solid var(--panel-border);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -6px 12px rgba(0,0,0,0.25);
   color: var(--gold-light);
@@ -629,8 +690,8 @@ a.room-tile:active {
 }
 .room-tile--featured .room-icon-badge {
   width: 60px; height: 60px;
-  background: linear-gradient(145deg, rgba(200,166,60,0.4), rgba(200,166,60,0.1));
-  border-color: rgba(200,166,60,0.48);
+  background: linear-gradient(145deg, rgba(201,162,39,0.4), rgba(201,162,39,0.1));
+  border-color: rgba(201,162,39,0.48);
 }
 
 .room-badge {
@@ -641,8 +702,8 @@ a.room-tile:active {
   text-transform: uppercase;
   font-weight: 600;
   color: var(--gold-light);
-  background: rgba(200,166,60,0.13);
-  border: 1px solid rgba(200,166,60,0.32);
+  background: rgba(201,162,39,0.13);
+  border: 1px solid rgba(201,162,39,0.32);
   padding: 4px 10px;
   border-radius: 20px;
 }
@@ -662,8 +723,8 @@ a.room-tile:active {
 a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
 
 @keyframes enter-glow-breathe {
-  0%, 100% { text-shadow: 0 0 14px rgba(228,197,103,0.35); }
-  50% { text-shadow: 0 0 26px rgba(228,197,103,0.7); }
+  0%, 100% { text-shadow: 0 0 14px rgba(232,206,122,0.35); }
+  50% { text-shadow: 0 0 26px rgba(232,206,122,0.7); }
 }
 .room-tile--featured .enter-affordance { animation: enter-glow-breathe 3.2s ease-in-out infinite; }
 
@@ -700,28 +761,10 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
 .room-tile--featured .room-feature-list li { color: var(--text); }
 .room-tile--featured .room-feature-list li::before { background: var(--gold-light); }
 
-/* A slow, faint light sweep across the featured tile only — the
-   "luxury-watch case catching light" touch. Very low opacity by design;
-   this must read as quiet, not carnival. */
-@keyframes shimmer-sweep {
-  0% { transform: translateX(-140%) rotate(8deg); }
-  100% { transform: translateX(260%) rotate(8deg); }
-}
-.room-shimmer {
-  position: absolute;
-  top: -50%; left: 0;
-  width: 35%; height: 200%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent);
-  pointer-events: none;
-  animation: shimmer-sweep 7s ease-in-out infinite;
-  animation-delay: 1.5s;
-  z-index: 0;
-}
-
 /* Gold progress ring */
 .gold-ring { position: relative; flex-shrink: 0; animation: ring-fade-in 0.6s ease both; }
 .gold-ring svg { transform: rotate(-90deg); display: block; }
-.gold-ring-track { fill: none; stroke: rgba(245,243,238,0.08); stroke-width: 8; }
+.gold-ring-track { fill: none; stroke: rgba(242,238,228,0.08); stroke-width: 8; }
 .gold-ring-fill {
   fill: none;
   stroke: var(--gold-light);
@@ -734,7 +777,7 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
   display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
 .gold-ring-label strong {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Fraunces', serif;
   font-size: 1.5rem;
   color: var(--text);
   line-height: 1;

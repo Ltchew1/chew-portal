@@ -34,12 +34,7 @@ function RoomTileBody({ room, unlocked, enterable }) {
   const Icon = room.icon;
   return (
     <>
-      {room.slug === 'credit' && (
-        <>
-          <span className="room-badge">Available now</span>
-          <span className="room-shimmer" aria-hidden="true" />
-        </>
-      )}
+      {room.slug === 'credit' && <span className="room-badge">Available now</span>}
       <div className="room-icon-badge"><Icon /></div>
       <h3>{room.name}</h3>
       <p className="room-tile-tagline">{room.tagline}</p>
@@ -110,6 +105,13 @@ export default async function LabHubPage({ searchParams }) {
 
   return (
     <div className="lab-hub-bg">
+      {/* The mark, featured elegantly — see .lab-mark for the treatment.
+          A real hero image (once supplied) slots in as a background-image
+          layer on .lab-hub-bg itself, behind the existing gold gradients —
+          see that rule's comment. Nothing here needs to change shape when
+          one arrives, only that one extra background layer gets added. */}
+      <div className="lab-mark"><img src="/chew-logo.png" alt="CHEW" /></div>
+
       <span className="lab-hero-eyebrow">CHEW: The Lab</span>
       <h1 className="lab-hero-title">{justArrived ? `You're in, ${firstName}.` : 'Welcome back.'}</h1>
       <p className="lab-hero-desc">
@@ -140,6 +142,11 @@ export default async function LabHubPage({ searchParams }) {
           />
         ))}
       </div>
+
+      {/* The creed — set small, quiet, Light Gold. Placed with reverence,
+          never shouted: this is the one spot on the whole platform where
+          it's said outright. */}
+      <p className="lab-creed">We all Chew. You eat. Then you feed the next.</p>
     </div>
   );
 }

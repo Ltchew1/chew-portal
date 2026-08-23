@@ -96,23 +96,26 @@ vague marketing copy — `built: false` stays honest until they exist.
 
 The hub (`app/dashboard/lab/page.js`) is styled as a "gallery wall": Credit
 (the one built room) is featured — spans two grid columns on tablet+, an
-"Available now" badge, a stronger resting glow, a larger icon badge, a
-slow light sweep across the tile, a breathing glow on its "Enter" text —
+"Available now" badge, a larger icon badge, a persistent resting glow —
 while the six unbuilt rooms render as muted, desaturated "dormant" tiles
 so the one real destination is unmistakable at a glance, never competing
 with placeholders for attention.
 
-- **Glass/obsidian tiles** (`.room-tile` in `app/globals.css`) — layered
-  charcoal-to-black gradient, `backdrop-filter: blur(20px) saturate(1.1)`,
-  an inset top highlight, and a soft radial gold tint anchored top-left.
-  The gold hairline border and glow bloom further on hover/focus, with a
-  distinct `:active` press state (scale down, faster transition) for
-  tactile feedback — resting state is quiet, hover is where it "ignites."
-- **A lit environment** (`.lab-hub-bg`) — layered radial gold-light
-  gradients behind the hub content plus a whisper-fine SVG-noise grain
-  (`opacity: 0.035`, blended with `mix-blend-mode: overlay`) so the
-  gradients don't band and the space reads as lit, not flat. The access
-  row has its own soft focal-glow spotlight behind the ring.
+- **The living gold light — one signature, three loci.** Per the portal
+  constitution, this is locked as *one* treatment (a soft, slow, breathing
+  radial glow), not a general-purpose effect to scatter around: behind the
+  hero (`.lab-hub-bg`, `living-glow-breathe` keyframe, 9s cycle), pulsing
+  under the primary action (`.room-tile--featured .enter-affordance`,
+  `enter-glow-breathe`, 3.2s cycle), and tracing a room's edge on hover
+  (`a.room-tile:hover` — border + box-shadow ignite). Nothing else on the
+  page glows — the eyebrow, hero title, and CHEW mark are deliberately
+  quiet (see the "what changed" note below) so these three carry all the
+  light.
+- **Glass/obsidian tiles** (`.room-tile`) — layered charcoal-to-black
+  gradient, `backdrop-filter: blur(20px) saturate(1.1)`, an inset top
+  highlight, a soft radial gold tint anchored top-left. A distinct
+  `:active` press state (scale down, faster transition) on top of the
+  hover lift, for tactile feedback.
 - **`GoldProgressRing`** (`app/components/lab/GoldProgressRing.js`) — an
   animated gold ring that fills on mount. The hub uses it to show rooms
   *ready to enter* — built AND status-unlocked, not just status-unlocked —
@@ -128,12 +131,57 @@ with placeholders for attention.
   Lab" affordance stays bottom-aligned across a row even when rooms list
   different numbers of features (Business lists 6, Financial Intelligence
   lists 3).
+- **The mark** (`.lab-mark`) — the CHEW logo, framed in a quiet gold
+  hairline ring at the top of the hero, no glow of its own — it sits
+  inside the ambient light rather than competing with it.
+- **The creed** (`.lab-creed`) — "We all Chew. You eat. Then you feed the
+  next," set small, Light Gold, wide-tracked, at the foot of the hub. Said
+  once, quietly, per the constitution's explicit placement rule.
 
 An unbuilt-but-status-unlocked room (e.g. Business for a Paid client)
 shows "Coming to your Lab" with **no lock icon** — a lock there would
 misleadingly imply a status restriction when the real reason is just that
 the room isn't built yet. The lock icon is reserved for rooms that are
 actually gated above the client's current status.
+
+**What changed from the previous pass, and why:** the portal constitution
+describes the living gold light as one signature treatment in exactly
+three places, not a general effect. The prior pass had drifted into
+several independent glow instances — a light-sweep animation across the
+Credit tile, a text-shadow glow on the hero eyebrow, another on the hero
+title, a glow around the CHEW mark. Each was reasonable in isolation, but
+together they diluted the one signature the constitution calls "the
+brand's heartbeat" — and the constitution explicitly warns against
+"excessive glowing borders." Removed the sweep and the eyebrow/title/mark
+glows; kept exactly the three loci above. Files: `app/globals.css` (removed
+`shimmer-sweep`/`.room-shimmer`, `.lab-mark`'s box-shadow, the eyebrow/title
+`text-shadow`s; added `living-glow-breathe`), `app/dashboard/lab/page.js`
+(removed the `.room-shimmer` span). Verify by comparing the hub before/
+after — fewer distinct light sources, same three, each reads as more
+intentional.
+
+**Typography note:** the constitution asks for a Canela/Ogg-style display
+serif — both are commercial foundry fonts with no free-to-embed license.
+Swapped in **Fraunces** (Google Fonts) in `app/layout.js` and everywhere
+`app/globals.css` referenced Playfair Display — it's built on the same
+idea (warm, high-contrast, "soft" old-style display forms) and is the
+standard open substitute for exactly this look. If a Canela/Ogg license is
+purchased later, that's the one link to swap.
+
+**Palette note:** exact hex values from the founder's brief were applied
+directly to the existing CSS custom properties (`--black`, `--gold`, etc. —
+names unchanged, only values updated) so every component that already
+consumed them picked up the new palette automatically. The one deliberate
+follow-on change: the old blue "steel" accent (used for page eyebrows,
+one badge variant, and the Tasks progress bar) has been retired from all
+decorative/brand uses — gold is the only light source now, per the
+constitution. `--steel-light` remains only for the non-decorative
+`:focus-visible` outline, where a color distinct from gold's hover/active
+states is a genuine accessibility aid, not a brand accent.
+
+**Referral Hub's route** is `/dashboard/lab/referral` (not `-hub`) to match
+the constitution's explicit route list; the room's display name stays
+"Referral Hub."
 
 ### First-visit guided tour
 
