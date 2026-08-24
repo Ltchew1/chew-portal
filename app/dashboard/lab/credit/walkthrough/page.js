@@ -6,6 +6,12 @@
 // other Credit room route. Accuracy guard in the copy itself: every section
 // below describes what a field IS, never whether a given entry looks
 // "wrong" — that judgment call stays with the client (see Flag Items).
+//
+// Tone: this is where the doctrine's "psychology of money" section is most
+// directly true — pulling your own report and actually reading it is a
+// genuinely tense moment for a lot of people (what if there's something
+// bad in there?). Steps 1-3 in particular are written to meet that gently,
+// not just to convey information.
 
 import PageHeader from '../../../../components/PageHeader';
 import CreditRoomSubNav from '../../../../components/lab/credit/CreditRoomSubNav';
@@ -17,12 +23,17 @@ const STEPS = [
     body: (
       <>
         <p>
+          Before anything else — pulling your own report doesn&apos;t hurt your score, and it
+          doesn&apos;t obligate you to do anything with what you find. There&apos;s no shame in
+          not having looked before. Most people haven&apos;t.
+        </p>
+        <p>
           Go to{' '}
           <a href="https://www.annualcreditreport.com" target="_blank" rel="noopener noreferrer">
             annualcreditreport.com
           </a>{' '}
           — the only site authorized by federal law to give you free credit reports from all
-          three bureaus. It takes about ten minutes and doesn&apos;t affect your credit score.
+          three bureaus. It takes about ten minutes.
         </p>
         <p>
           Request all three: Equifax, Experian, and TransUnion. They&apos;re compiled separately
@@ -50,7 +61,11 @@ const STEPS = [
     title: 'Accounts (also called "Tradelines")',
     body: (
       <>
-        <p>The biggest section. Each account — credit cards, auto loans, mortgages, student loans — shows:</p>
+        <p>
+          The biggest section, and usually the one that takes a breath before opening. Come sit
+          with it at your own pace — you can close the tab and come back. Each account — credit
+          cards, auto loans, mortgages, student loans — shows:
+        </p>
         <ul style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
           <li><strong>Creditor name</strong> — who the account is with.</li>
           <li><strong>Account status</strong> — open, closed, current, past due, in collections, or charged off.</li>
@@ -60,8 +75,11 @@ const STEPS = [
         </ul>
         <p>
           Read through every account and ask yourself one question for each: <em>do I recognize
-          this, and did I authorize it?</em> That&apos;s it — you&apos;re not grading the account,
-          just checking whether it&apos;s yours.
+          this, and did I authorize it?</em> That&apos;s it — you&apos;re not grading yourself or
+          the account, just checking whether it&apos;s yours. An account you do recognize, even one
+          you&apos;d rather forget, isn&apos;t something to flag — it's accurate, and accurate
+          information belongs on a report. This walkthrough is only about finding what
+          <em> isn&apos;t</em> actually yours.
         </p>
       </>
     ),
@@ -90,6 +108,77 @@ const STEPS = [
       </p>
     ),
   },
+  {
+    label: 'Step 6',
+    title: 'The other two bureaus almost nobody checks',
+    body: (
+      <>
+        <p>
+          Equifax, Experian, and TransUnion aren&apos;t the only companies keeping a file on you.{' '}
+          <strong>LexisNexis Risk Solutions</strong> and <strong>Innovis</strong> are &quot;secondary&quot;
+          consumer reporting agencies — they compile their own separate reports, sometimes used for
+          insurance or background checks, and something can be wrong on one of these without ever
+          showing up on your &quot;big three&quot; reports.
+        </p>
+        <p>
+          Both owe you one free report a year, same as the big three, just requested separately:
+        </p>
+        <ul style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <li>
+            LexisNexis: request online at{' '}
+            <a href="https://consumer.risk.lexisnexis.com/request" target="_blank" rel="noopener noreferrer">
+              consumer.risk.lexisnexis.com/request
+            </a>{' '}
+            or by phone at 1-866-897-8126.
+          </li>
+          <li>
+            Innovis: request online at{' '}
+            <a href="https://www.innovis.com/personal/creditReport" target="_blank" rel="noopener noreferrer">
+              innovis.com
+            </a>{' '}
+            or by phone at 1-800-877-3100.
+          </li>
+        </ul>
+        <p style={{ marginTop: '10px' }}>
+          These aren&apos;t urgent the way your first report is — most people are fine to come back
+          to this step later. Read them the same way: do you recognize each entry, did you authorize it.
+        </p>
+      </>
+    ),
+  },
+  {
+    label: 'Know your rights',
+    title: 'What the law actually gives you',
+    body: (
+      <>
+        <p>
+          This is general information about the Fair Credit Reporting Act (FCRA), not legal advice
+          about your specific situation — for that, talk to a licensed attorney. But the basics are
+          worth knowing before you flag anything:
+        </p>
+        <ul style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
+          <li>
+            <strong>§609</strong> gives you the right to request the actual contents of your file
+            from a reporting agency — it&apos;s the basis for Step 1 and Step 6 above.
+          </li>
+          <li>
+            <strong>§611</strong> is the one that actually moves things: once you dispute an item
+            with a bureau, they must reasonably reinvestigate — generally within 30 days — and
+            delete or fix anything that can&apos;t be verified.
+          </li>
+          <li>
+            <strong>§623</strong> covers furnishers — the actual creditors who report to the
+            bureaus. They can&apos;t knowingly report inaccurate information, and they have to
+            investigate a dispute you send them directly, not just ones a bureau forwards.
+          </li>
+        </ul>
+        <p style={{ marginTop: '10px' }}>
+          The Letters tool uses these same citations, matched to whoever you&apos;re actually
+          writing to.
+        </p>
+      </>
+    ),
+  },
 ];
 
 export default function CreditWalkthroughPage() {
@@ -113,7 +202,7 @@ export default function CreditWalkthroughPage() {
 
       <div className="alert">
         <span>
-          Once you&apos;ve been through all three reports, you&apos;re ready to{' '}
+          Once you&apos;ve been through your reports, you&apos;re ready to{' '}
           <a href="/dashboard/lab/credit/flag">flag anything you don&apos;t recognize or didn&apos;t
           authorize</a>. You decide what gets flagged; CHEW never decides for you.
         </span>

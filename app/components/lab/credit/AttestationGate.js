@@ -20,10 +20,11 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import StandingDisclosures from './StandingDisclosures';
 import { ATTESTATION_STATEMENTS } from '../../../../lib/creditRoomCompliance';
+import { BUREAU_LABELS } from '../../../../lib/creditAddresses';
 
-const BUREAU_LABELS = { equifax: 'Equifax', experian: 'Experian', transunion: 'TransUnion' };
 const REASON_LABELS = { not_mine: "Don't recognize", not_authorized: "Didn't authorize" };
 
 function ItemRow({ item, onAttested, onRemoved }) {
@@ -143,9 +144,11 @@ export default function AttestationGate({ items }) {
       {localItems.length > 0 && (
         <p className="text-faint" style={{ fontSize: '0.85rem', marginTop: '4px' }}>
           {attestedCount} of {localItems.length} items attested.{' '}
-          {allAttested
-            ? "Letter generation isn't built yet — once it is, it only unlocks here once every item above is attested."
-            : "Check each statement above to attest — a letter can't be generated for an item until you do."}
+          {allAttested ? (
+            <>Ready when you are — <Link href="/dashboard/lab/credit/letters">generate a letter</Link>.</>
+          ) : (
+            "No rush. Check each statement above only when you're sure — a letter can't be generated for an item until you do."
+          )}
         </p>
       )}
     </div>

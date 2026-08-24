@@ -14,9 +14,10 @@ const LINKS = [
   { label: 'Overview', href: '/dashboard/lab/credit' },
   { label: 'Report Walkthrough', href: '/dashboard/lab/credit/walkthrough' },
   { label: 'Flag Items', href: '/dashboard/lab/credit/flag' },
+  { label: 'Letters', href: '/dashboard/lab/credit/letters' },
 ];
 
-const COMING_SOON = ['Letter Generator', 'Dispute Tracker', 'Education Library'];
+const COMING_SOON = ['Dispute Tracker', 'Education Library'];
 
 export default function CreditRoomSubNav() {
   const pathname = usePathname();

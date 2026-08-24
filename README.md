@@ -268,8 +268,33 @@ Run both checks together with `npm run compliance:check`.
   (`DELETE /api/lab/credit/dispute-items/[id]`) to fix a mistake — once
   attested, it can't be; `deleteUnattestedItem()` enforces that with a
   `WHERE status = 'flagged'` clause, not just in the UI.
-- Letter generator, dispute tracker, and education library are not built
-  yet. `CreditRoomSubNav` shows them as "coming soon."
+- **Letters** (`/dashboard/lab/credit/letters`) — the full escalation
+  ladder: Stage 1 (bureau), Stage 2 (furnisher), Stage 3 (secondary bureau —
+  LexisNexis/Innovis), Stage 4 (CFPB or FTC complaint narrative, built from
+  a prior letter's items plus the client's own account of what went wrong).
+  `LetterGenerator.js` groups the client's attested items by bureau and
+  derives Stage 1 vs. Stage 3 automatically from `PRIMARY_BUREAUS` /
+  `SECONDARY_BUREAUS` (`lib/creditAddresses.js`) — the client never has to
+  understand that distinction themselves. `lib/letters.js` calls
+  `assertItemsAttested()` first, before any letter is composed or
+  persisted — no exceptions, regardless of what the UI shows. Letter text
+  itself comes from `lib/letterContent.js`: curated, hand-written phrase
+  variants selected with `Math.random()` at generation time and then
+  persisted as-is (never regenerated on re-read) — deliberately not an LLM
+  call, so every possible sentence the compliance scanners need to audit is
+  fully known in advance. FCRA citations (`lib/fcraCitations.js`) are
+  matched to the recipient — §611 for bureaus and secondary bureaus, §623
+  for furnishers, §609 held back as background-only education (Report
+  Walkthrough) to avoid the "609 letter" credit-repair myth. Real,
+  web-search-verified mailing addresses for all five bureaus plus the CFPB
+  live in `lib/creditAddresses.js`; the CFPB accepts mail or online, the FTC
+  is online-only (no mailing address), and the UI says so. Requires a
+  mailing address on file first (`MailingAddressForm.js`,
+  `/api/lab/credit/mailing-address`) since every letter needs a return
+  address. Generated letters are download/print-only — see "No-transmission
+  lock" above.
+- Dispute tracker and education library are not built yet.
+  `CreditRoomSubNav` shows them as "coming soon."
 
 ## What's real right now
 
@@ -280,7 +305,8 @@ Run both checks together with `npm run compliance:check`.
   mirrored to Clerk, gates The Lab and its rooms server-side (see above)
 - CHEW: The Lab — glass-and-gold room picker hub (`/dashboard/lab`) with
   seven rooms; Credit is fully real (guardrail framework, Report
-  Walkthrough, Self-Flagging Tool, all backed by Postgres). The other six
+  Walkthrough, Self-Flagging Tool, and the full Letters generator — all
+  four escalation stages, all backed by Postgres). The other six
   rooms are honest "coming to your Lab" placeholders with specific,
   real feature teasers. The first-visit guided tour is real and persisted
   (see above), and correctly distinguishes "just finished the tour" from a

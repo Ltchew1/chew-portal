@@ -16,6 +16,8 @@ const BUREAUS = [
   { value: 'equifax', label: 'Equifax' },
   { value: 'experian', label: 'Experian' },
   { value: 'transunion', label: 'TransUnion' },
+  { value: 'lexisnexis', label: 'LexisNexis (secondary bureau)' },
+  { value: 'innovis', label: 'Innovis (secondary bureau)' },
 ];
 
 export default function FlagItemForm() {
@@ -64,9 +66,9 @@ export default function FlagItemForm() {
     <form onSubmit={handleSubmit} className="card" style={{ marginTop: '20px' }}>
       <h3>Flag an item</h3>
       <p className="text-faint" style={{ fontSize: '0.85rem', marginBottom: '16px' }}>
-        Found something on your report while going through the walkthrough that you don&apos;t
-        recognize or didn&apos;t authorize? Enter it exactly as it appears below, then attest to
-        it in the list above once it&apos;s added.
+        Seeing something on your report that doesn&apos;t look right can be unsettling — that&apos;s
+        a normal reaction, not a sign you did anything wrong. Enter it exactly as it appears below,
+        and you&apos;ll attest to it in the list above once it&apos;s added.
       </p>
 
       <div className="field">

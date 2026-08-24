@@ -12,9 +12,10 @@ import { NextResponse } from 'next/server';
 import { getRoomAccess } from '../../../../../lib/clientStatus';
 import { getRoom } from '../../../../../lib/rooms';
 import { createDisputeItem, listDisputeItemsForUser } from '../../../../../lib/disputeItems';
+import { ALL_BUREAUS } from '../../../../../lib/creditAddresses';
 
 const CREDIT_REQUIRED_STATUS = getRoom('credit').requiredStatus;
-const VALID_BUREAUS = ['equifax', 'experian', 'transunion'];
+const VALID_BUREAUS = ALL_BUREAUS;
 const VALID_REASONS = ['not_mine', 'not_authorized'];
 
 export async function GET() {

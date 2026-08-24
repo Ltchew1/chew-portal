@@ -132,3 +132,10 @@ export const IconReferral = (p) => (
     <path d="M8.6 10.6 15.6 7M8.6 13.4l7 3.6" />
   </svg>
 );
+
+export const IconMail = (p) => (
+  <svg {...base(p)}>
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <path d="m3.5 6 8.5 7 8.5-7" />
+  </svg>
+);
