@@ -938,6 +938,53 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
   margin-bottom: 12px;
 }
 .chew-move-eyebrow--urgent { color: var(--danger); }
+
+/* The isolation sequence — real tracked signals (barriers/opportunities/
+   chewNoticed, see lib/todayIntelligence.js's buildMoveSignals) surface
+   briefly as scattered chips, then recede as the move resolves. One-shot
+   on mount (no loop — nothing here burns battery after ~1.8s), and the
+   whole block is aria-hidden since every signal it shows is also read
+   verbatim elsewhere on the page (What's Waiting, Opportunity Ladder). */
+.chew-isolation { margin-bottom: 6px; }
+.chew-isolation-kicker {
+  display: block;
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-faintest);
+  opacity: 0;
+  animation: chew-isolation-kicker-fade 1.8s ease both;
+}
+@keyframes chew-isolation-kicker-fade {
+  0% { opacity: 0; } 10% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; }
+}
+.chew-isolation-field { position: relative; height: 46px; margin-bottom: 4px; }
+.chew-isolation-chip {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 0.72rem;
+  padding: 4px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+  border: 1px solid var(--divider);
+  background: rgba(255,255,255,0.03);
+  color: var(--text-faint);
+  opacity: 0;
+  animation: chew-isolation-chip 1.5s cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes chew-isolation-chip {
+  0% { opacity: 0; transform: translateX(-50%) translateY(4px) scale(0.94); }
+  22% { opacity: 0.85; transform: translateX(-50%) translateY(0) scale(1); }
+  75% { opacity: 0.85; transform: translateX(-50%) translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(0.8); }
+}
+.chew-isolation-chip--barrier { border-color: rgba(181,84,74,0.4); }
+.chew-isolation-chip--opportunity { border-color: rgba(74,155,110,0.4); }
+.chew-isolation-chip--noticed { border-color: rgba(201,162,39,0.3); }
+
+/* When an isolation sequence plays, the card's own resolve (see
+   chew-move-resolve below) waits until the chips have receded instead of
+   firing immediately — the move should brighten as the noise clears, not
+   before it. */
+.chew-move-card--isolated { animation-delay: 1.35s; }
 .chew-move-action { font-size: clamp(1.35rem, 3vw, 1.75rem); margin-bottom: 4px; }
 
 /* The impact chain — "1 move -> removes N constraints -> advances N

@@ -24,7 +24,7 @@ import { reconcileCreditIntelligence } from '../../lib/intelligenceCore';
 import { listRecentNotifications } from '../../lib/notifications';
 import {
   timeOfDayGreeting, canSeeRoomIntelligence, buildChangeSummary,
-  buildAccountLevelMove, buildLifeMapGraph, buildOpportunityLadder, buildRecentlyResolved,
+  buildAccountLevelMove, buildLifeMapGraph, buildOpportunityLadder, buildRecentlyResolved, buildMoveSignals,
 } from '../../lib/todayIntelligence';
 
 const STATUS_LABELS = { applicant: 'Applicant', accepted: 'Accepted', paid: 'Paid' };
@@ -49,6 +49,7 @@ export default async function TodayPage() {
 
   const move = creditRoomResult?.nextBestMove ?? buildAccountLevelMove(status);
   const urgentMove = creditRoomResult?.planStatus === 'plan_at_risk';
+  const moveSignals = buildMoveSignals(creditRoomResult);
 
   const readyCount = ROOMS.filter((room) => isRoomLive(room.slug) && hasRequiredStatus(status, room.requiredStatus)).length;
   // Only Credit has a real opportunity-detection pipeline today (see
@@ -95,7 +96,7 @@ export default async function TodayPage() {
         </div>
       </div>
 
-      <ChewMoveCard move={move} urgent={urgentMove} />
+      <ChewMoveCard move={move} urgent={urgentMove} signals={moveSignals} />
 
       {creditRoomResult && (creditRoomResult.whatChanged.length > 0 || creditRoomResult.chewNoticed.length > 0) && (
         <RevealOnScroll className="today-reveal">
