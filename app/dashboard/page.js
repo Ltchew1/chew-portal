@@ -12,6 +12,7 @@ import { currentUser } from '@clerk/nextjs/server';
 import GoldProgressRing from '../components/lab/GoldProgressRing';
 import RevealOnScroll from '../components/lab/RevealOnScroll';
 import ChewMoveCard from '../components/today/ChewMoveCard';
+import BarrierDissolve from '../components/today/BarrierDissolve';
 import WhatChangedRipple from '../components/today/WhatChangedRipple';
 import WhatsWaiting from '../components/today/WhatsWaiting';
 import LifeMap from '../components/today/LifeMap';
@@ -22,10 +23,10 @@ import { ROOMS } from '../../lib/rooms';
 import { statusFromClerkUser, hasRequiredStatus } from '../../lib/clientStatus';
 import { listFeatures, evaluateFeatureAccess, roomFeatureKey } from '../../lib/features';
 import { reconcileCreditIntelligence } from '../../lib/intelligenceCore';
-import { listRecentNotifications } from '../../lib/notifications';
 import {
   timeOfDayGreeting, canSeeRoomIntelligence, buildChangeSummary,
-  buildAccountLevelMove, buildLifeMapGraph, buildOpportunityLadder, buildRecentlyResolved, buildMoveSignals, buildChangeRipples, buildDominoCascade,
+  buildAccountLevelMove, buildLifeMapGraph, buildOpportunityLadder, buildMoveSignals,
+  buildChangeRipples, buildDominoCascade, buildDissolveEvents,
 } from '../../lib/todayIntelligence';
 
 const STATUS_LABELS = { applicant: 'Applicant', accepted: 'Accepted', paid: 'Paid' };
@@ -35,14 +36,14 @@ export default async function TodayPage() {
   const firstName = user?.firstName || 'there';
   const status = statusFromClerkUser(user);
 
-  const [features, notifications] = await Promise.all([listFeatures(), listRecentNotifications(user.id, 20)]);
+  const features = await listFeatures();
   const featuresByKey = new Map(features.map((f) => [f.featureKey, f]));
   const isRoomLive = (slug) => evaluateFeatureAccess(featuresByKey.get(roomFeatureKey(slug)), user);
 
   const creditRoom = ROOMS.find((room) => room.slug === 'credit');
   const canSeeCredit = canSeeRoomIntelligence(status, creditRoom) && isRoomLive('credit');
   const creditRoomResult = canSeeCredit ? await reconcileCreditIntelligence(user.id) : null;
-  const recentlyResolved = buildRecentlyResolved(notifications);
+  const dissolveEvents = buildDissolveEvents(creditRoomResult);
 
   const { changedCount, attentionCount } = creditRoomResult
     ? buildChangeSummary([creditRoomResult])
@@ -103,6 +104,12 @@ export default async function TodayPage() {
 
       <ChewMoveCard move={move} urgent={urgentMove} signals={moveSignals} domino={domino} />
 
+      {dissolveEvents.length > 0 && (
+        <RevealOnScroll className="today-reveal">
+          <BarrierDissolve events={dissolveEvents} />
+        </RevealOnScroll>
+      )}
+
       {creditRoomResult && (creditRoomResult.whatChanged.length > 0 || creditRoomResult.chewNoticed.length > 0) && (
         <RevealOnScroll className="today-reveal">
           <span className="today-section-eyebrow">What changed</span>
@@ -123,10 +130,10 @@ export default async function TodayPage() {
         </RevealOnScroll>
       )}
 
-      {creditRoomResult && (creditRoomResult.activeBarriers?.length > 0 || recentlyResolved.length > 0) && (
+      {creditRoomResult && creditRoomResult.activeBarriers?.length > 0 && (
         <RevealOnScroll className="today-reveal">
           <span className={`today-section-eyebrow${rippleClass('waiting')}`}>What&apos;s waiting</span>
-          <WhatsWaiting barriers={creditRoomResult.activeBarriers} recentlyResolved={recentlyResolved} />
+          <WhatsWaiting barriers={creditRoomResult.activeBarriers} />
         </RevealOnScroll>
       )}
 

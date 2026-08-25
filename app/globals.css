@@ -1377,6 +1377,104 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
 }
 .ripple-glow { animation: ripple-glow-pulse 1.6s ease-out 0.3s both; }
 
+/* Barrier / Unlock Dissolve — a real obstruction visibly clearing. Two
+   stacked connector lines (dashed-red "broken" / solid-gold "open")
+   cross-fade in sync with the blocking node retracting, so the path
+   reads as reconnecting rather than a generic transition. One-shot,
+   ~1.6s total; the reduced-motion rule (global) collapses every
+   duration to ~0, so the end state (node gone, connector solid, outcome
+   visible) renders immediately instead of mid-animation. */
+.dissolve-card { padding: 14px 0; }
+.dissolve-card + .dissolve-card { border-top: 1px solid var(--divider); }
+.dissolve-stage {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+@keyframes dissolve-node-retract {
+  0%, 40% { opacity: 1; transform: scaleX(1); filter: none; }
+  75% { opacity: 0.25; transform: scaleX(0.7); filter: blur(1.5px); }
+  100% { opacity: 0; transform: scaleX(0.4); }
+}
+.dissolve-node {
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  transform-origin: left center;
+  animation: dissolve-node-retract 1.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.dissolve-node--barrier { border: 1px dashed rgba(181,84,74,0.5); color: var(--danger); }
+.dissolve-node--locked { border: 1px dashed var(--divider); color: var(--text-faintest); }
+
+.dissolve-connector { position: relative; width: 36px; height: 2px; flex-shrink: 0; }
+.dissolve-connector-broken,
+.dissolve-connector-open {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+}
+.dissolve-connector-broken {
+  background: repeating-linear-gradient(90deg, rgba(181,84,74,0.6) 0 4px, transparent 4px 8px);
+  animation: dissolve-fade-out 1.5s ease both;
+}
+.dissolve-connector-open {
+  background: var(--gold-light);
+  opacity: 0;
+  animation: dissolve-fade-in 1.5s ease both;
+}
+@keyframes dissolve-fade-out { 0%, 55% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes dissolve-fade-in { 0%, 55% { opacity: 0; } 100% { opacity: 1; } }
+
+@keyframes dissolve-outcome-in {
+  0%, 60% { opacity: 0; transform: translateX(-4px) scale(0.92); }
+  100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+.dissolve-outcome {
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
+  color: var(--success);
+  background: var(--success-bg);
+  border: 1px solid rgba(74,155,110,0.35);
+  padding: 6px 12px;
+  border-radius: 20px;
+  animation: dissolve-outcome-in 1.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.dissolve-result { font-size: 0.85rem; color: var(--text-faint); margin: 0 0 8px; }
+
+.dissolve-toggle {
+  background: none; border: none; padding: 0;
+  color: var(--text-faint);
+  font-family: inherit; font-size: 0.8rem; font-weight: 600;
+  cursor: pointer;
+}
+.dissolve-toggle:hover { color: var(--gold-light); }
+.dissolve-detail {
+  display: grid; gap: 10px;
+  margin-top: 10px; padding: 12px 14px;
+  border-radius: var(--radius);
+  background: rgba(0,0,0,0.2);
+  border: 1px solid var(--divider);
+}
+.dissolve-detail dt {
+  font-size: 0.66rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--gold-light);
+}
+.dissolve-detail dd { margin: 2px 0 0; font-size: 0.85rem; }
+
+/* Mobile — a real vertical version, not the desktop row squeezed. The
+   connector rotates into a short vertical stroke between stacked nodes. */
+@media (max-width: 560px) {
+  .dissolve-stage { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .dissolve-connector { width: 2px; height: 20px; margin-left: 8px; }
+  .dissolve-node { transform-origin: top left; }
+  @keyframes dissolve-node-retract {
+    0%, 40% { opacity: 1; transform: scaleY(1); filter: none; }
+    75% { opacity: 0.25; transform: scaleY(0.7); filter: blur(1.5px); }
+    100% { opacity: 0; transform: scaleY(0.4); }
+  }
+}
+
 /* What's Waiting — active barriers, plus the ones that just dissolved.
    The dissolved treatment is the directive's "if a constraint disappears,
    show that relationship": lower opacity, a strikethrough-style divider,
@@ -1384,7 +1482,6 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
    "resolved" — never a new color vocabulary just for this one moment. */
 .waiting-item { padding: 12px 0; }
 .waiting-item + .waiting-item { border-top: 1px solid var(--divider); }
-.waiting-item--dissolved { opacity: 0.68; }
 
 /* Section eyebrows — the priority-hierarchy kickers ("What's opening,"
    "Your world," etc.) that sit above a section heading, quieter than
