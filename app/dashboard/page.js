@@ -25,7 +25,7 @@ import { reconcileCreditIntelligence } from '../../lib/intelligenceCore';
 import { listRecentNotifications } from '../../lib/notifications';
 import {
   timeOfDayGreeting, canSeeRoomIntelligence, buildChangeSummary,
-  buildAccountLevelMove, buildLifeMapGraph, buildOpportunityLadder, buildRecentlyResolved, buildMoveSignals, buildChangeRipples,
+  buildAccountLevelMove, buildLifeMapGraph, buildOpportunityLadder, buildRecentlyResolved, buildMoveSignals, buildChangeRipples, buildDominoCascade,
 } from '../../lib/todayIntelligence';
 
 const STATUS_LABELS = { applicant: 'Applicant', accepted: 'Accepted', paid: 'Paid' };
@@ -51,6 +51,7 @@ export default async function TodayPage() {
   const move = creditRoomResult?.nextBestMove ?? buildAccountLevelMove(status);
   const urgentMove = creditRoomResult?.planStatus === 'plan_at_risk';
   const moveSignals = buildMoveSignals(creditRoomResult);
+  const domino = buildDominoCascade(move);
 
   const readyCount = ROOMS.filter((room) => isRoomLive(room.slug) && hasRequiredStatus(status, room.requiredStatus)).length;
   // Only Credit has a real opportunity-detection pipeline today (see
@@ -68,7 +69,8 @@ export default async function TodayPage() {
     });
   const opportunityLadder = buildOpportunityLadder({ creditIntel: creditRoomResult, dormantRoomCount });
   const ripple = buildChangeRipples(creditRoomResult?.whatChanged);
-  const rippleClass = (system) => (ripple.affected[system] ? ' ripple-glow' : '');
+  const affected = { ...ripple.affected, ...domino.affected };
+  const rippleClass = (system) => (affected[system] ? ' ripple-glow' : '');
 
   return (
     <div className="today-bg">
@@ -99,7 +101,7 @@ export default async function TodayPage() {
         </div>
       </div>
 
-      <ChewMoveCard move={move} urgent={urgentMove} signals={moveSignals} />
+      <ChewMoveCard move={move} urgent={urgentMove} signals={moveSignals} domino={domino} />
 
       {creditRoomResult && (creditRoomResult.whatChanged.length > 0 || creditRoomResult.chewNoticed.length > 0) && (
         <RevealOnScroll className="today-reveal">

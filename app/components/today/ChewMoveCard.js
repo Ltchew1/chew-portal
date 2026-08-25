@@ -13,10 +13,12 @@
 // Skipped entirely when there are zero real signals: nothing to isolate
 // from, so no sequence plays.
 //
-// Impact chain: "removes N constraints -> advances N goals -> unlocks N
-// pathways," every number from lib/homeIntelligence.js's `impact` field,
-// computed in the same branch that chose this move — never a separate
-// estimate, never rendered when the real number is 0.
+// Domino Cascade ("ONE MOVE. N EFFECTS."): every step is a real number
+// from lib/homeIntelligence.js's `impact` field (see
+// lib/todayIntelligence.js's buildDominoCascade), paired with the real
+// Today section it lands on — the same section vocabulary What Changed
+// Ripple uses, so "affects X" means one thing everywhere on this page.
+// Never rendered when there are no real effects.
 
 'use client';
 
@@ -29,23 +31,24 @@ const IMPACT_LABELS = {
   goalsAdvanced: (n) => `${n} goal${n === 1 ? '' : 's'} advanced`,
   pathwaysUnlocked: (n) => `${n} pathway${n === 1 ? '' : 's'} unlocked`,
 };
-const IMPACT_ORDER = ['constraintsRemoved', 'goalsAdvanced', 'pathwaysUnlocked'];
 
-function ImpactChain({ impact, baseDelay }) {
-  const chips = IMPACT_ORDER
-    .filter((key) => impact?.[key] > 0)
-    .map((key) => ({ key, text: IMPACT_LABELS[key](impact[key]) }));
-  if (chips.length === 0) return null;
-
+function DominoCascade({ steps, baseDelay }) {
+  if (steps.length === 0) return null;
   return (
     <div className="chew-move-impact" aria-label="What this move accomplishes">
-      <span className="chew-move-impact-source">1 move</span>
-      {chips.map((chip, i) => (
-        <span key={chip.key} className="chew-move-impact-step" style={{ animationDelay: `${baseDelay + i * 0.18}s` }}>
-          <IconChevronRight className="chew-move-impact-arrow" />
-          <span className="chew-move-impact-chip">{chip.text}</span>
-        </span>
-      ))}
+      <span className="chew-move-impact-kicker">ONE MOVE. {steps.length} EFFECT{steps.length === 1 ? '' : 'S'}.</span>
+      <div className="chew-move-impact-row">
+        <span className="chew-move-impact-source">1 move</span>
+        {steps.map((step, i) => (
+          <span key={step.key} className="chew-move-impact-step" style={{ animationDelay: `${baseDelay + i * 0.22}s` }}>
+            <IconChevronRight className="chew-move-impact-arrow" />
+            <span className="chew-move-impact-chip">
+              {IMPACT_LABELS[step.key](step.value)}
+              <span className="chew-move-impact-target">→ {step.systemLabel}</span>
+            </span>
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
@@ -78,7 +81,7 @@ function IsolationField({ signals }) {
   );
 }
 
-export default function ChewMoveCard({ move, urgent, signals = [] }) {
+export default function ChewMoveCard({ move, urgent, signals = [], domino = { steps: [] } }) {
   const [open, setOpen] = useState(false);
   if (!move) return null;
   const isolated = signals.length > 0;
@@ -93,7 +96,7 @@ export default function ChewMoveCard({ move, urgent, signals = [] }) {
       </div>
       <h2 className="chew-move-action">{move.action}</h2>
 
-      <ImpactChain impact={move.impact} baseDelay={isolated ? 1.6 : 0.5} />
+      <DominoCascade steps={domino.steps} baseDelay={isolated ? 1.6 : 0.5} />
 
       <button
         type="button"
