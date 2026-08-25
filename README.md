@@ -417,26 +417,118 @@ matching the directive's home hierarchy while leaving the tour and gallery
 themselves untouched. A first-time visitor still sees the cinematic tour
 exactly as before.
 
+## CHEW Intelligence Core v1 — the "one brain" consolidation
+
+After the first pass above, the direction shifted deliberately: consolidate
+what had been separate pieces (Goal Graph, Score Path, Next Best Move, Plan
+Status, CHEW Noticed, What Changed, Ask CHEW) into one architecture *before*
+multiplying rooms — so a second room extends a real system instead of
+copying a pattern that then drifts. Common language throughout: **Person →
+Goal → Current State → Signals → Barriers/Opportunities → Actions
+(Recommendations) → Events → Outcomes.**
+
+### The universal event log (`chew_events` table, `lib/events.js`)
+
+The most important piece, architecturally: every meaningful write path in
+the app (`createDisputeItem`, `recordAttestation`, `generateDisputeLetter`,
+`generateEscalationLetter`, `createTrackerEntryForLetter`,
+`updateTrackerEntry`, `setActiveGoal`, `recordScoreSnapshot`) now logs a
+`chew_events` row **at the source of truth**, inside the same write path
+(and, where one already existed, the same DB transaction) as the action
+itself. "What Changed" no longer re-diffs timestamps across four different
+tables — it reads this one event stream (`eventToText()` in
+`lib/homeIntelligence.js`). Every other signal (barriers, notifications)
+can eventually key off the same stream instead of each inventing its own
+notion of "did anything happen."
+
+### Persistent barrier & opportunity objects (`lib/barriers.js`, `lib/opportunities.js`)
+
+Interference and upside are no longer disposable strings recomputed and
+thrown away every page load — they're real rows, upserted by a stable
+`sourceKey` fingerprint of the underlying condition (e.g.
+`stalled_response:<tracker_entry_id>`). Re-detecting the same condition
+never forks a duplicate; when the condition clears, that exact row is
+marked `resolved` — which is what makes "You fixed it" possible instead of
+a barrier just silently vanishing. Both follow the platform's now-explicit
+communication grammar: barriers carry `whatHappened → whatItHurts → why →
+severity → doThisNow → doNotDo → whatSuccessLooksLike → recheckTrigger`;
+opportunities carry the positive mirror (`whatImproved → whyItMatters →
+whatItUnlocked → suggestedAction → confidence`). `lib/homeIntelligence.js`
+generates the *candidates* (pure); `lib/intelligenceCore.js` reconciles
+them against the database (upsert active ones, resolve stale ones).
+
+### Recommendation history — "Why CHEW told me that" (`lib/recommendations.js`)
+
+Every Next Best Move is now a persisted row, not an overwritten value.
+Setting a new recommendation is a no-op if the action text hasn't actually
+changed (no churn from recomputing the same thing on every page load); a
+genuinely different one supersedes the old, keeping full history. The
+`RecommendationExplainer` component (a "Why?" toggle next to every Next
+Best Move, on the home page and in the War Room) shows what CHEW observed,
+the reason, and what would actually change the recommendation — inspectable
+intelligence, not a black box.
+
+### In-app notifications (`notifications` table, `lib/notifications.js`)
+
+Architected now, per the directive, even though delivery is in-app only:
+email/push/SMS are later, separately-authorized integrations that would
+read from this same table rather than needing a second model bolted on.
+`lib/intelligenceCore.js`'s reconciler is the only thing that creates a
+notification, and only at real moments — a new barrier, a barrier resolved
+("You fixed it"), a new opportunity, or a recommendation that changed.
+Shown on the Lab home via `NotificationsPanel` (display-only for v1; mark-
+as-read interaction is a real next increment, not built here).
+
+### CHEW Intelligence Core (`lib/intelligenceCore.js`)
+
+The reconciler that ties all of the above together — the one place that
+writes to `barriers`/`opportunities`/`recommendations`/`notifications`.
+Idempotent by design (upsert-by-key, no-op-if-unchanged), so it's safe to
+call on every page load that needs current state. `reconcileHomeIntelligence()`
+is the multi-room merge point the home page (and War Room, and Secret
+Weapon) actually calls — `lib/homeIntelligence.js` stays the pure per-room
+signal layer underneath it.
+
+### My CHEW War Room (`/dashboard/lab/war-room`) and Your Credit Secret Weapon (`/dashboard/lab/credit/secret-weapon`)
+
+Built now, using only verified existing data — per the directive, "the
+containers themselves do not [need more data]." War Room aggregates
+Mission / Current Position / Plan Status / Next Best Move / CHEW Noticed /
+Active Barriers / What CHEW Is Watching / Completed & Pending Moves /
+Evidence (placeholder until the Evidence Vault ships) / Plan Changes, from
+the same reconciled intelligence shown elsewhere — a different, command-
+center lens on real data, not a new data source. Secret Weapon
+(`lib/secretWeapon.js`, pure) synthesizes Your Target / What Matters Most /
+What Doesn't Matter Right Now / Your Strongest Advantage / Your Biggest
+Constraint / a 3-move sequence / What Could Knock You Off Track / What CHEW
+Will Watch / What Unlocks Next. Both degrade honestly to "not enough logged
+yet" for a client with no Credit activity, and both get more sophisticated
+automatically as CHEW knows more — no separate "upgrade" needed.
+
+### Ask CHEW, upgraded toward a dispatcher
+
+Ask CHEW's router (`lib/askChew.js`) now carries an optional `dispatch` tag
+per intent, and the one currently wired end-to-end is the score/target
+intent: "I want a 750" is parsed (`parseScoreTarget()`) and, if the client's
+Credit access is independently verified, actually sets the score goal
+server-side (`app/api/home/ask/route.js`) — Ask CHEW activates a system
+instead of only linking to it. This is the pattern every other intent grows
+into over time, not a claim that it's done for all of them yet.
+
 ### Deferred from the master intelligence directive
 
-The directive describes a much larger system — Interference Scan +
-Recovery Mode, a full Decision Lab, Counterfactual/Pre-Mortem engines, a
-War Room, "Secret Weapon," Evidence Vault, a personal economic Digital
-Twin, push/email notification delivery, and Opportunity/Blind-Spot radar
-across every room. None of that is faked here. What's built is the load-
-bearing foundation those systems would sit on — Goal Graph, a real signals
-engine, and a real (if narrow) Next-Best-Move — proven correct on the one
-room with real data, in a shape a second room can extend without
-duplicating logic. Extending to a second room (Credit Builder is the
+Still genuinely deferred, none of it faked: a full Decision Lab
+(what-if modeling), Counterfactual/Pre-Mortem engines, an Evidence Vault, a
+true personal economic Digital Twin, email/push/SMS notification delivery,
+and Opportunity/Blind-Spot radar beyond Credit's grounded signals.
+Extending the Intelligence Core to a second room (Credit Builder is the
 natural next candidate — it already has a real build sequence in
-`lib/rooms.js`'s feature list) needs that room's own data model built
-first; Decision Lab and Digital Twin need a broader financial-profile data
-model (income, debts, assets) that doesn't exist yet and deserves its own
-scoping pass, since giving confident directives on investment/property/
-business decisions is a materially different scope than the Credit room's
-FCRA-bounded dispute education. Recovery Mode and Interference Scan are
-partially present in spirit (Plan at Risk + "why + what to do" framing) but
-not built as their own named system yet.
+`lib/rooms.js`'s feature list) is next in line, now that the shared
+architecture exists to extend rather than copy. Decision Lab and a real
+Digital Twin need a broader financial-profile data model (income, debts,
+assets) that doesn't exist yet and deserve their own scoping pass, since
+giving confident directives on investment/property/business decisions is a
+materially different scope than Credit's FCRA-bounded dispute education.
 
 ## What's real right now
 
@@ -448,16 +540,20 @@ not built as their own named system yet.
 - CHEW: The Lab — glass-and-gold room picker hub (`/dashboard/lab`) with
   seven rooms; Credit is fully real (guardrail framework, Report
   Walkthrough, Self-Flagging Tool, the full Letters generator across all
-  four escalation stages, the Dispute Tracker, and the Score Path Engine —
-  all backed by Postgres). The other six rooms are honest "coming to your
-  Lab" placeholders with specific, real feature teasers. The first-visit
-  guided tour is real and persisted (see above), and correctly
-  distinguishes "just finished the tour" from a true return visit. A
-  returning visitor's hub now opens with Ask CHEW and a real, computed
-  Plan Status / Next Best Move / What Changed / CHEW Noticed block driven
-  by the client's own Credit room activity (see "Shared intelligence
-  foundations" above) — the room-access ring below it is still real,
-  computed progress, not a fabricated "goal."
+  four escalation stages, the Dispute Tracker, the Score Path Engine, and
+  the Secret Weapon synthesis — all backed by Postgres). The other six
+  rooms are honest "coming to your Lab" placeholders with specific, real
+  feature teasers. The first-visit guided tour is real and persisted (see
+  above), and correctly distinguishes "just finished the tour" from a true
+  return visit. A returning visitor's hub now opens with Ask CHEW, recent
+  in-app notifications, and a real, reconciled Plan Status / Next Best Move
+  (with a "why did CHEW tell me that" explainer) / Active Barriers / What
+  Changed / CHEW Noticed block, all driven by the client's own Credit room
+  activity through the CHEW Intelligence Core (see above) — the room-access
+  ring below it is still real, computed progress, not a fabricated "goal."
+  My CHEW War Room (`/dashboard/lab/war-room`) gives the same reconciled
+  state a command-center view, with recommendation history ("Plan
+  Changes").
 - Brand styling — matches joinchew.com's colors and fonts already
 
 ## What's next (not built yet, on purpose)

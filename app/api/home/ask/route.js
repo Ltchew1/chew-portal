@@ -7,7 +7,11 @@
 
 import { NextResponse } from 'next/server';
 import { getRoomAccess, LAB_REQUIRED_STATUS } from '../../../../lib/clientStatus';
-import { routeAskChew } from '../../../../lib/askChew';
+import { getRoom } from '../../../../lib/rooms';
+import { routeAskChew, parseScoreTarget } from '../../../../lib/askChew';
+import { setScoreGoal } from '../../../../lib/creditScore';
+
+const CREDIT_REQUIRED_STATUS = getRoom('credit').requiredStatus;
 
 export async function POST(req) {
   const { user, hasAccess } = await getRoomAccess(LAB_REQUIRED_STATUS);
@@ -26,5 +30,30 @@ export async function POST(req) {
   }
 
   const result = routeAskChew(body.text);
+
+  // The one intent currently wired to actually activate a CHEW system
+  // rather than just link to it — see lib/askChew.js's file comment. Only
+  // dispatches when the matched room is actually open on this account
+  // (re-checked independently here, not trusted from the match alone) and
+  // a real, in-range score was present in the text.
+  if (result.matched && result.dispatch === 'score_goal' && result.roomBuilt) {
+    const targetScore = parseScoreTarget(body.text);
+    if (targetScore) {
+      const { hasAccess: hasCreditAccess } = await getRoomAccess(CREDIT_REQUIRED_STATUS);
+      if (hasCreditAccess) {
+        const goal = await setScoreGoal({
+          clerkUserId: user.id,
+          email: user.primaryEmailAddress?.emailAddress,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          targetScore,
+        });
+        return NextResponse.json({
+          result: { ...result, dispatched: true, dispatchType: 'goal_set', targetScore, goal },
+        });
+      }
+    }
+  }
+
   return NextResponse.json({ result });
 }

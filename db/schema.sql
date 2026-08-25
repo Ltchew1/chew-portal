@@ -235,3 +235,152 @@ CREATE TABLE IF NOT EXISTS credit_score_snapshots (
 );
 
 CREATE INDEX IF NOT EXISTS idx_credit_score_snapshots_user_id ON credit_score_snapshots(user_id);
+
+-- ============================================================================
+-- CHEW Intelligence Core v1 — the "one brain" consolidation. Every room's
+-- signals engine (see lib/homeIntelligence.js) reads and writes through
+-- these five tables instead of re-deriving its own ad-hoc state, so a
+-- second room (Credit Builder, Business, ...) plugs into the same
+-- architecture rather than growing a parallel one. See lib/events.js,
+-- lib/barriers.js, lib/opportunities.js, lib/recommendations.js,
+-- lib/notifications.js, lib/intelligenceCore.js.
+--
+-- Common language: Person -> Goal -> Current State -> Signals -> Barriers /
+-- Opportunities -> Actions (Recommendations) -> Events -> Outcomes.
+-- ============================================================================
+
+-- The universal event log. Every meaningful thing the client does anywhere
+-- in the portal is logged here, at the source of truth (inside the same
+-- write path/transaction as the action itself) — this replaces ad-hoc
+-- "diff two timestamps" logic for "What Changed" with a real, append-only
+-- record. Nothing here is system-inferred activity; source is 'client'
+-- for everything a person did, reserved 'system' for CHEW's own derived
+-- events (e.g. "a barrier was auto-resolved").
+CREATE TABLE IF NOT EXISTS chew_events (
+  id               BIGSERIAL PRIMARY KEY,
+  user_id          BIGINT NOT NULL REFERENCES users(id),
+  room             TEXT NOT NULL,
+  event_type       TEXT NOT NULL, -- e.g. 'item_flagged', 'letter_generated', 'score_logged'
+  subject          TEXT NOT NULL, -- plain-English: "Letter to Experian", "706 (overall)"
+  occurred_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  source           TEXT NOT NULL DEFAULT 'client' CHECK (source IN ('client', 'system')),
+  previous_state   JSONB,
+  new_state        JSONB,
+  severity         TEXT NOT NULL DEFAULT 'info' CHECK (severity IN ('info', 'watch', 'action_needed', 'risk', 'positive')),
+  requires_action  BOOLEAN NOT NULL DEFAULT false,
+  related_goal_id  BIGINT REFERENCES goals(id),
+  metadata         JSONB,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_chew_events_user_id ON chew_events(user_id, occurred_at DESC);
+
+-- Persistent barriers — "something is interfering with a goal" as a real,
+-- trackable row instead of text a function recomputes and throws away each
+-- page load. `source_key` is a stable fingerprint (e.g.
+-- 'stalled_response:<tracker_entry_id>') so the reconciler in
+-- lib/intelligenceCore.js can upsert idempotently: re-detecting the same
+-- underlying condition never creates a duplicate row, and when the
+-- condition clears, that exact row is the one marked resolved — which is
+-- what makes "You fixed it" possible.
+CREATE TABLE IF NOT EXISTS barriers (
+  id                BIGSERIAL PRIMARY KEY,
+  user_id           BIGINT NOT NULL REFERENCES users(id),
+  room              TEXT NOT NULL,
+  related_goal_id   BIGINT REFERENCES goals(id),
+  source_key        TEXT NOT NULL, -- fingerprint of the underlying condition
+  title             TEXT NOT NULL,
+  what_happened     TEXT NOT NULL,
+  what_it_hurts     TEXT NOT NULL,
+  why               TEXT NOT NULL,
+  severity          TEXT NOT NULL CHECK (severity IN ('watch', 'action_needed', 'risk')),
+  do_this_now       TEXT NOT NULL,
+  do_not_do         TEXT,
+  what_success_looks_like TEXT NOT NULL,
+  recheck_trigger   TEXT NOT NULL,
+  status            TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'resolved')),
+  detected_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  resolved_at       TIMESTAMPTZ,
+  resolution_note   TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_barriers_user_id ON barriers(user_id);
+-- One active barrier per (user, source_key) — re-detecting the same
+-- condition on the next page load updates the existing row, never forks a
+-- second one. A resolved barrier's key is free to be reused by a later,
+-- unrelated recurrence of the same condition type.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_barriers_active_source_key
+  ON barriers(user_id, source_key) WHERE status = 'active';
+
+-- Opportunities — the same architecture, opposite direction: upside CHEW
+-- noticed, tracked symmetrically with barriers rather than as disposable
+-- text.
+CREATE TABLE IF NOT EXISTS opportunities (
+  id                BIGSERIAL PRIMARY KEY,
+  user_id           BIGINT NOT NULL REFERENCES users(id),
+  room              TEXT NOT NULL,
+  related_goal_id   BIGINT REFERENCES goals(id),
+  source_key        TEXT NOT NULL,
+  title             TEXT NOT NULL,
+  what_improved     TEXT NOT NULL,
+  why_it_matters    TEXT NOT NULL,
+  what_it_unlocked  TEXT,
+  suggested_action  TEXT NOT NULL,
+  confidence        TEXT NOT NULL DEFAULT 'medium' CHECK (confidence IN ('low', 'medium', 'high')),
+  status            TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'resolved')),
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  resolved_at       TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_opportunities_user_id ON opportunities(user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_opportunities_active_source_key
+  ON opportunities(user_id, source_key) WHERE status = 'active';
+
+-- Recommendation history — every Next Best Move CHEW has shown is kept,
+-- not overwritten, so a client can inspect "why did CHEW tell me that" and
+-- see it change over time. `observed` is the plain-English list of what
+-- CHEW was looking at when it produced this recommendation;
+-- `what_would_change_this` is the honest list of what would make CHEW
+-- recompute. Only one recommendation is active per (user, room) at a time —
+-- setting a new one supersedes the last.
+CREATE TABLE IF NOT EXISTS recommendations (
+  id                       BIGSERIAL PRIMARY KEY,
+  user_id                  BIGINT NOT NULL REFERENCES users(id),
+  room                     TEXT NOT NULL,
+  related_goal_id          BIGINT REFERENCES goals(id),
+  action_text              TEXT NOT NULL,
+  reason                   TEXT NOT NULL,
+  observed                 JSONB NOT NULL DEFAULT '[]',
+  what_would_change_this   JSONB NOT NULL DEFAULT '[]',
+  href                     TEXT,
+  status                   TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'superseded')),
+  created_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
+  superseded_at            TIMESTAMPTZ,
+  superseded_reason        TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_recommendations_user_id ON recommendations(user_id, created_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_recommendations_active_room
+  ON recommendations(user_id, room) WHERE status = 'active';
+
+-- In-app notifications — architected now per the intelligence directive
+-- ("architect notification channels now, even if only in-app"). email/push/
+-- sms delivery is a later, separately-authorized integration; this table is
+-- the channel-agnostic event feed those would eventually read from.
+CREATE TABLE IF NOT EXISTS notifications (
+  id               BIGSERIAL PRIMARY KEY,
+  user_id          BIGINT NOT NULL REFERENCES users(id),
+  room             TEXT NOT NULL,
+  type             TEXT NOT NULL CHECK (type IN (
+                     'critical_action', 'plan_at_risk', 'opportunity_found', 'back_on_track',
+                     'milestone', 'chew_noticed', 'reassessment_complete'
+                   )),
+  title            TEXT NOT NULL,
+  body             TEXT NOT NULL,
+  href             TEXT,
+  related_event_id BIGINT REFERENCES chew_events(id),
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  read_at          TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id, created_at DESC);

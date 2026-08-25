@@ -12,7 +12,7 @@ import PageHeader from '../../../components/PageHeader';
 import StandingDisclosures from '../../../components/lab/credit/StandingDisclosures';
 import CreditRoomSubNav from '../../../components/lab/credit/CreditRoomSubNav';
 import ScoreGoal from '../../../components/lab/credit/ScoreGoal';
-import { IconBook, IconScale, IconMail, IconClipboard, IconChevronRight } from '../../../components/icons';
+import { IconBook, IconScale, IconMail, IconClipboard, IconSparkles, IconChevronRight } from '../../../components/icons';
 import { listDisputeItemsForUser } from '../../../../lib/disputeItems';
 import { listLettersForUser } from '../../../../lib/letters';
 import { listTrackerEntriesForUser } from '../../../../lib/disputeTracker';
@@ -94,6 +94,20 @@ export default async function CreditRoomPage() {
           <span className="flex-between" style={{ marginTop: '8px' }}>
             <span className="text-faint" style={{ fontSize: '0.82rem' }}>
               {trackerEntries.length === 0 ? 'Not started' : `${openTrackerCount} in progress`}
+            </span>
+            <IconChevronRight />
+          </span>
+        </Link>
+
+        <Link href="/dashboard/lab/credit/secret-weapon" className="card" style={{ color: 'inherit' }}>
+          <div className="card-icon"><IconSparkles /></div>
+          <h3>Secret Weapon</h3>
+          <p style={{ fontSize: '0.88rem' }}>
+            A strategic synthesis of exactly what CHEW knows about your plan right now.
+          </p>
+          <span className="flex-between" style={{ marginTop: '8px' }}>
+            <span className="text-faint" style={{ fontSize: '0.82rem' }}>
+              {items.length === 0 ? 'Not started' : 'View'}
             </span>
             <IconChevronRight />
           </span>

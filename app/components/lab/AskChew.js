@@ -84,7 +84,13 @@ export default function AskChew() {
 
       {result && (
         <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--divider)' }}>
-          {result.matched ? (
+          {result.dispatched && result.dispatchType === 'goal_set' ? (
+            <p style={{ fontSize: '0.88rem' }}>
+              Done — set your credit score target to <strong>{result.targetScore}</strong>. CHEW&apos;s already using
+              it — see your{' '}
+              <Link href="/dashboard/lab/credit">updated plan in Credit</Link>.
+            </p>
+          ) : result.matched ? (
             result.roomBuilt ? (
               <Link href={result.href} className="flex-between" style={{ color: 'inherit' }}>
                 <span>

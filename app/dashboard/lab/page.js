@@ -20,6 +20,7 @@
 // PageHeader's generic eyebrow/h1/p layout is meant for.
 
 import { currentUser } from '@clerk/nextjs/server';
+import Link from 'next/link';
 import GoldProgressRing from '../../components/lab/GoldProgressRing';
 import RevealOnScroll from '../../components/lab/RevealOnScroll';
 import TourExperience from '../../components/lab/tour/TourExperience';
@@ -29,7 +30,9 @@ import { IconChevronRight, IconLock } from '../../components/icons';
 import { ROOMS } from '../../../lib/rooms';
 import { statusFromClerkUser, hasRequiredStatus } from '../../../lib/clientStatus';
 import { hasCompletedTour } from '../../../lib/tour';
-import { getHomeIntelligence } from '../../../lib/homeIntelligence';
+import { reconcileHomeIntelligence } from '../../../lib/intelligenceCore';
+import { listRecentNotifications } from '../../../lib/notifications';
+import NotificationsPanel from '../../components/lab/NotificationsPanel';
 
 const STATUS_LABELS = { applicant: 'Applicant', accepted: 'Accepted', paid: 'Paid' };
 
@@ -97,7 +100,10 @@ export default async function LabHubPage({ searchParams }) {
   }
 
   const firstName = user.firstName || 'there';
-  const homeIntelligence = await getHomeIntelligence(user.id);
+  const [homeIntelligence, notifications] = await Promise.all([
+    reconcileHomeIntelligence(user.id),
+    listRecentNotifications(user.id, 6),
+  ]);
   // "Ready to enter" — built AND status-unlocked. Deliberately not just
   // status-unlocked: a Paid client clears every room's status threshold,
   // but only Credit actually has content, so counting status alone would
@@ -139,9 +145,13 @@ export default async function LabHubPage({ searchParams }) {
       {!justArrived && (
         <div className="lab-intelligence-block">
           <AskChew />
+          <NotificationsPanel notifications={notifications} />
           {homeIntelligence.rooms.map((roomIntel) => (
             <HomeIntelligence key={roomIntel.room} intelligence={roomIntel} />
           ))}
+          <Link href="/dashboard/lab/war-room" className="btn btn-outline btn-sm" style={{ marginBottom: '8px' }}>
+            Open My War Room <IconChevronRight />
+          </Link>
         </div>
       )}
 

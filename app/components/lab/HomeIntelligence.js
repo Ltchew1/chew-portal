@@ -8,6 +8,7 @@
 
 import Link from 'next/link';
 import { IconTrendUp, IconSparkles, IconChevronRight } from '../icons';
+import RecommendationExplainer from './RecommendationExplainer';
 
 const PLAN_STATUS_LABELS = {
   on_track: 'On Track',
@@ -22,7 +23,7 @@ const PLAN_STATUS_BADGE = {
   plan_at_risk: 'badge-danger',
 };
 
-function NextBestMoveCard({ move }) {
+function NextBestMoveCard({ move, recommendation }) {
   if (!move) return null;
   return (
     <div className="card next-move-card" style={{ marginBottom: '20px' }}>
@@ -44,12 +45,27 @@ function NextBestMoveCard({ move }) {
       <Link href={move.href} className="btn btn-gold btn-sm">
         {move.linkLabel} <IconChevronRight />
       </Link>
+      <RecommendationExplainer recommendation={recommendation} />
+    </div>
+  );
+}
+
+function BarrierCard({ barrier }) {
+  return (
+    <div style={{ marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--divider)' }}>
+      <div className="flex-between" style={{ marginBottom: '4px' }}>
+        <strong style={{ fontSize: '0.88rem' }}>{barrier.title}</strong>
+        <span className="badge badge-danger">{barrier.severity === 'risk' ? 'Risk' : 'Action Needed'}</span>
+      </div>
+      <p className="text-faint" style={{ fontSize: '0.82rem', margin: '0 0 4px' }}>{barrier.whatHappened}</p>
+      <p style={{ fontSize: '0.82rem', margin: '0 0 4px' }}><strong>Do this now: </strong>{barrier.doThisNow}</p>
+      <p className="text-faint" style={{ fontSize: '0.78rem', margin: 0 }}>CHEW rechecks: {barrier.recheckTrigger}</p>
     </div>
   );
 }
 
 export default function HomeIntelligence({ intelligence }) {
-  const { planStatus, nextBestMove, chewNoticed, whatChanged, opportunities } = intelligence;
+  const { planStatus, nextBestMove, chewNoticed, whatChanged, opportunities, activeBarriers, recommendation } = intelligence;
 
   return (
     <>
@@ -60,7 +76,14 @@ export default function HomeIntelligence({ intelligence }) {
         </div>
       )}
 
-      <NextBestMoveCard move={nextBestMove} />
+      <NextBestMoveCard move={nextBestMove} recommendation={recommendation} />
+
+      {activeBarriers?.length > 0 && (
+        <div className="card" style={{ marginBottom: '20px' }}>
+          <h3 style={{ marginBottom: '10px' }}>Active barriers</h3>
+          {activeBarriers.map((b) => <BarrierCard key={b.id} barrier={b} />)}
+        </div>
+      )}
 
       {(whatChanged.length > 0 || chewNoticed.length > 0) && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px', marginBottom: '20px' }}>
