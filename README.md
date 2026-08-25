@@ -556,6 +556,53 @@ materially different scope than Credit's FCRA-bounded dispute education.
   Changes").
 - Brand styling — matches joinchew.com's colors and fonts already
 
+## Admin → Network — adding a company doesn't require editing code
+
+The Capability Graph (previous phase: `providers`, `capabilities`,
+`capability_providers`, `provider_handoffs` — all real, all unreachable
+by any client because nothing is seeded) now has a real internal tool
+behind it instead of requiring a migration + hand-written seed row per
+company.
+
+- **`app/dashboard/admin/layout.js`** gates the entire `/dashboard/admin/*`
+  tree to internal staff (`isInternalUser()` — Clerk
+  `publicMetadata.chewInternal === true`, same trust model as
+  `clientStatus`). A signed-in client who isn't staff gets Next's plain
+  404, not an "admins only" page — the admin surface's existence isn't
+  something a normal customer needs to know about. Every API route under
+  `/api/admin/network/*` independently re-checks the same gate — the page
+  gate and the API gate are two separate checks, not one shared assumption.
+- **`app/dashboard/admin/network`** (`NetworkAdmin.js`) is the real tool:
+  add a capability, add a provider/entity (with every field
+  `isReadyForRouting()` requires — jurisdiction, licensing note, intake
+  process, disclosure text, data-sharing notes, escalation process), flip
+  a provider's status as its readiness checklist fills in, and link a
+  provider to a capability (active/inactive, eligibility notes,
+  prerequisites, documents needed). The pairings table shows whether each
+  link would actually pass `matchCapability()`'s gates right now — the
+  same read the client-facing matching function would do, visible to
+  whoever's deciding when to activate something.
+- **`lib/providers.js` gained `updateProvider()`** — a real partial update
+  (COALESCE per field), so filling in one more readiness field at a time
+  doesn't require re-sending the whole row.
+- **`lib/capabilityGraph.js` gained `upsertCapabilityProviderPair()`** and
+  **`listCapabilityProviderPairs()`** — the linking write path and the
+  admin-facing read (which, unlike `matchCapability()`, is allowed to see
+  every internal field, since this view is staff-only).
+- **`provider_handoffs` widened** toward the fuller Universal Handoff
+  Protocol shape: `need_type`, `reason`, `urgency`, and — closing the loop
+  precisely — `origin_event_id`/`outcome_event_id` linking a handoff to
+  the exact `chew_events` rows that surfaced the need and later recorded
+  the result, so a future recommendation recalculation can trace back to
+  *which* handoff caused a change, not just that something happened.
+
+Still true from the previous phase and unchanged by this one: zero
+providers are seeded, `NETWORK_ROUTING_LIVE` is still `false`, and nothing
+in Ask CHEW, notifications, or recommendations queries this graph. Admin
+tooling existing doesn't change what's exposed to a client — it changes
+how a founder gets a real company into the system without asking for a
+code change.
+
 ## Evidence Vault v1 — client-owned recordkeeping, not file storage
 
 Deliberately scoped: this app has no blob-storage integration (S3, Vercel

@@ -479,6 +479,18 @@ CREATE TABLE IF NOT EXISTS provider_handoffs (
 
 CREATE INDEX IF NOT EXISTS idx_provider_handoffs_user_id ON provider_handoffs(user_id);
 
+-- Widened toward the Universal Handoff Protocol's fuller shape: why this
+-- handoff exists (need_type/reason), how urgent (urgency), and links back
+-- into the universal event log at both ends — the event that surfaced the
+-- need, and the event an outcome creates when it lands — so a handoff is
+-- traceable in the same timeline as everything else a client did, not a
+-- side channel.
+ALTER TABLE provider_handoffs ADD COLUMN IF NOT EXISTS need_type TEXT;
+ALTER TABLE provider_handoffs ADD COLUMN IF NOT EXISTS reason TEXT;
+ALTER TABLE provider_handoffs ADD COLUMN IF NOT EXISTS urgency TEXT CHECK (urgency IN ('low', 'normal', 'high'));
+ALTER TABLE provider_handoffs ADD COLUMN IF NOT EXISTS origin_event_id BIGINT REFERENCES chew_events(id);
+ALTER TABLE provider_handoffs ADD COLUMN IF NOT EXISTS outcome_event_id BIGINT REFERENCES chew_events(id);
+
 -- ============================================================================
 -- Universal feature-status registry — "hidden UI is not security." Every
 -- room and named capability in the portal (built or not) gets one row here,
