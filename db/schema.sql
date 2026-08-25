@@ -576,3 +576,86 @@ CREATE TABLE IF NOT EXISTS evidence_records (
 
 CREATE INDEX IF NOT EXISTS idx_evidence_records_user_id ON evidence_records(user_id);
 CREATE INDEX IF NOT EXISTS idx_evidence_records_tracker_entry ON evidence_records(related_tracker_entry_id);
+
+-- ============================================================================
+-- Provider qualification lifecycle + outcome/consent depth — see
+-- CAPABILITY_NETWORK.md for the full model. Renames the old cosmetic
+-- draft/ready/paused/retired status into a real, audited lifecycle with
+-- entry criteria at each stage; every transition is logged, not just
+-- overwritten. Still true: zero providers seeded in production, and
+-- NETWORK_ROUTING_LIVE (lib/networkRouting.js) still gates everything —
+-- this migration changes what a "ready" provider actually has to prove,
+-- not whether any client can reach one.
+-- ============================================================================
+
+-- Idempotent rename: only fires the first time this runs against a given
+-- database (a second run finds no `service_status` column left to rename).
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'providers' AND column_name = 'service_status') THEN
+    ALTER TABLE providers RENAME COLUMN service_status TO lifecycle_status;
+  END IF;
+END $$;
+
+ALTER TABLE providers DROP CONSTRAINT IF EXISTS providers_service_status_check;
+ALTER TABLE providers DROP CONSTRAINT IF EXISTS providers_lifecycle_status_check;
+ALTER TABLE providers ADD CONSTRAINT providers_lifecycle_status_check
+  CHECK (lifecycle_status IN ('discovered', 'under_review', 'verified', 'approved', 'pilot', 'live', 'suspended', 'retired'));
+ALTER TABLE providers ALTER COLUMN lifecycle_status SET DEFAULT 'discovered';
+
+-- The qualification checklist itself, as real columns a routing gate can
+-- actually check — not implied by a single status flag. identity_verified/
+-- service_verified/licensing_verified default to unverified; nothing
+-- reaches 'approved' honestly without a human having actually set these.
+ALTER TABLE providers ADD COLUMN IF NOT EXISTS official_website TEXT;
+ALTER TABLE providers ADD COLUMN IF NOT EXISTS service_geography TEXT;
+ALTER TABLE providers ADD COLUMN IF NOT EXISTS capacity_status TEXT CHECK (capacity_status IN ('available', 'limited', 'unavailable'));
+ALTER TABLE providers ADD COLUMN IF NOT EXISTS expected_response_time TEXT;
+ALTER TABLE providers ADD COLUMN IF NOT EXISTS pricing_model TEXT;
+ALTER TABLE providers ADD COLUMN IF NOT EXISTS contract_status TEXT;
+ALTER TABLE providers ADD COLUMN IF NOT EXISTS outcome_reporting_capability TEXT;
+ALTER TABLE providers ADD COLUMN IF NOT EXISTS last_verified_at DATE;
+ALTER TABLE providers ADD COLUMN IF NOT EXISTS next_review_at DATE;
+ALTER TABLE providers ADD COLUMN IF NOT EXISTS internal_owner TEXT;
+ALTER TABLE providers ADD COLUMN IF NOT EXISTS evidence_notes TEXT;
+ALTER TABLE providers ADD COLUMN IF NOT EXISTS identity_verified BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE providers ADD COLUMN IF NOT EXISTS service_verified BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE providers ADD COLUMN IF NOT EXISTS licensing_verified TEXT NOT NULL DEFAULT 'pending'
+  CHECK (licensing_verified IN ('verified', 'not_applicable', 'pending'));
+
+-- Every lifecycle transition, audited — "not cosmetic labels." Whoever
+-- (or whatever) moved a provider from one stage to the next, and why, is
+-- reconstructable later without guessing.
+CREATE TABLE IF NOT EXISTS provider_lifecycle_events (
+  id           BIGSERIAL PRIMARY KEY,
+  provider_id  BIGINT NOT NULL REFERENCES providers(id),
+  from_status  TEXT,
+  to_status    TEXT NOT NULL,
+  note         TEXT,
+  changed_by   TEXT, -- clerk_user_id of the admin who made the change, or 'system'
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_provider_lifecycle_events_provider ON provider_lifecycle_events(provider_id);
+
+-- Handoff depth: consent versioning/revocation, a real outcome taxonomy
+-- instead of complete/failed, and an explicit simulated-transmission flag
+-- so a test proof (or any handoff to a provider CHEW has no live
+-- transmission channel to yet) is labeled as such in the data itself, not
+-- just in a comment.
+ALTER TABLE provider_handoffs ADD COLUMN IF NOT EXISTS consent_version TEXT;
+ALTER TABLE provider_handoffs ADD COLUMN IF NOT EXISTS consent_revoked_at TIMESTAMPTZ;
+ALTER TABLE provider_handoffs ADD COLUMN IF NOT EXISTS consent_recipient_name TEXT; -- snapshot at consent time
+ALTER TABLE provider_handoffs ADD COLUMN IF NOT EXISTS is_simulated_transmission BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE provider_handoffs ADD COLUMN IF NOT EXISTS outcome_requires_followup BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE provider_handoffs ADD COLUMN IF NOT EXISTS outcome_source TEXT;
+ALTER TABLE provider_handoffs ADD COLUMN IF NOT EXISTS outcome_metadata JSONB NOT NULL DEFAULT '{}';
+ALTER TABLE provider_handoffs ADD COLUMN IF NOT EXISTS outcome_classification TEXT CHECK (outcome_classification IN (
+  'successful', 'partially_successful', 'user_not_eligible', 'provider_declined', 'user_abandoned',
+  'user_no_response', 'provider_no_response', 'wrong_match', 'missing_documentation',
+  'provider_capacity_issue', 'escalated', 'cancelled', 'problem_complaint', 'outcome_unknown'
+));
+
+ALTER TABLE provider_handoffs DROP CONSTRAINT IF EXISTS provider_handoffs_status_check;
+ALTER TABLE provider_handoffs ADD CONSTRAINT provider_handoffs_status_check
+  CHECK (status IN ('consent_pending', 'consent_given', 'handed_off', 'outcome_received', 'declined', 'cancelled'));

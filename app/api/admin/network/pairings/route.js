@@ -31,7 +31,9 @@ export async function POST(req) {
 
   const pair = await upsertCapabilityProviderPair({
     capabilityId, providerId,
-    isActive: Boolean(body.isActive),
+    // Strict-typed: Boolean("false") === true in JS — a routing-gate flag
+    // must never silently flip active on a malformed non-boolean value.
+    isActive: body.isActive === true,
     eligibilityNotes: body.eligibilityNotes?.trim() || null,
     clientProfileFit: body.clientProfileFit?.trim() || null,
     prerequisiteSteps: body.prerequisiteSteps ?? [],

@@ -9,12 +9,17 @@ import NetworkAdmin from '../../../components/admin/NetworkAdmin';
 import { listProviders } from '../../../../lib/providers';
 import { listCapabilities } from '../../../../lib/capabilities';
 import { listCapabilityProviderPairs } from '../../../../lib/capabilityGraph';
+import { listAllHandoffs } from '../../../../lib/providerHandoff';
+import { listAllEvents } from '../../../../lib/events';
+import { NETWORK_ROUTING_LIVE } from '../../../../lib/networkRouting';
 
 export default async function AdminNetworkPage() {
-  const [providers, capabilities, pairs] = await Promise.all([
+  const [providers, capabilities, pairs, handoffs, events] = await Promise.all([
     listProviders(),
     listCapabilities(),
     listCapabilityProviderPairs(),
+    listAllHandoffs(),
+    listAllEvents({ room: 'network', limit: 100 }),
   ]);
 
   return (
@@ -22,9 +27,23 @@ export default async function AdminNetworkPage() {
       <PageHeader
         eyebrow="Admin"
         title="Network"
-        description="Entities, capabilities, and pairings behind the Capability Graph — internal only."
+        description="Entities, capabilities, pairings, and handoffs behind the Capability Graph — internal only."
       />
-      <NetworkAdmin initialProviders={providers} initialCapabilities={capabilities} initialPairs={pairs} />
+      <div className="alert" style={{ marginBottom: '20px', borderColor: NETWORK_ROUTING_LIVE ? undefined : 'var(--danger)' }}>
+        <span>
+          <strong>NETWORK_ROUTING_LIVE = {String(NETWORK_ROUTING_LIVE)}.</strong>{' '}
+          {NETWORK_ROUTING_LIVE
+            ? 'Client-facing routing is enabled. Every match below is potentially reachable by a real client.'
+            : 'Client-facing routing is disabled. Nothing below is reachable by any client regardless of readiness status — this screen is a preview, not a live control panel.'}
+        </span>
+      </div>
+      <NetworkAdmin
+        initialProviders={providers}
+        initialCapabilities={capabilities}
+        initialPairs={pairs}
+        initialHandoffs={handoffs}
+        initialEvents={events}
+      />
     </>
   );
 }
