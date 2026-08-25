@@ -16,6 +16,7 @@ const LINKS = [
   { label: 'Flag Items', href: '/dashboard/lab/credit/flag' },
   { label: 'Letters', href: '/dashboard/lab/credit/letters' },
   { label: 'Dispute Tracker', href: '/dashboard/lab/credit/tracker' },
+  { label: 'Evidence Vault', href: '/dashboard/lab/credit/evidence' },
   { label: 'Secret Weapon', href: '/dashboard/lab/credit/secret-weapon' },
 ];
 

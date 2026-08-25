@@ -556,6 +556,31 @@ materially different scope than Credit's FCRA-bounded dispute education.
   Changes").
 - Brand styling — matches joinchew.com's colors and fonts already
 
+## Evidence Vault v1 — client-owned recordkeeping, not file storage
+
+Deliberately scoped: this app has no blob-storage integration (S3, Vercel
+Blob, or similar) and none is wired up here — that needs the founder to
+choose a provider and supply real credentials, which is out of scope for
+this pass (see "Requires external integration" below). What's real instead
+is a structured **log**: category, title, notes, the date it pertains to,
+and an optional link to a Dispute Tracker entry — genuinely useful
+recordkeeping ("what do I have and where"), not a placeholder pretending
+to hold files.
+
+- `evidence_records` table + `lib/evidenceVault.js` — full CRUD, owner-
+  scoped in the SQL itself (not just checked earlier in the call chain,
+  same discipline as `deleteUnattestedItem`).
+- Logging a record writes a `document_logged` chew_event — it shows up in
+  "What Changed" the same as any other Credit room activity, and the
+  Intelligence Core's event stream (not a separate, uncounted action).
+- Registered in the feature registry as `credit_evidence_vault`,
+  `status='live'` (it's real) — both API routes independently re-check
+  this via `getFeatureAccess()`, not just the Credit room's own status
+  gate, matching every other route added this phase.
+- UI (`/dashboard/lab/credit/evidence`) says plainly, in the client-facing
+  copy itself, that this isn't a file upload — no ambiguity about what the
+  feature actually does.
+
 ## Universal feature-status system — "hidden UI is not security"
 
 Every room and named capability now has one row in the `features` table

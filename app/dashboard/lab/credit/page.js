@@ -12,7 +12,7 @@ import PageHeader from '../../../components/PageHeader';
 import StandingDisclosures from '../../../components/lab/credit/StandingDisclosures';
 import CreditRoomSubNav from '../../../components/lab/credit/CreditRoomSubNav';
 import ScoreGoal from '../../../components/lab/credit/ScoreGoal';
-import { IconBook, IconScale, IconMail, IconClipboard, IconSparkles, IconChevronRight } from '../../../components/icons';
+import { IconBook, IconScale, IconMail, IconClipboard, IconSparkles, IconVault, IconChevronRight } from '../../../components/icons';
 import { listDisputeItemsForUser } from '../../../../lib/disputeItems';
 import { listLettersForUser } from '../../../../lib/letters';
 import { listTrackerEntriesForUser } from '../../../../lib/disputeTracker';
@@ -95,6 +95,18 @@ export default async function CreditRoomPage() {
             <span className="text-faint" style={{ fontSize: '0.82rem' }}>
               {trackerEntries.length === 0 ? 'Not started' : `${openTrackerCount} in progress`}
             </span>
+            <IconChevronRight />
+          </span>
+        </Link>
+
+        <Link href="/dashboard/lab/credit/evidence" className="card" style={{ color: 'inherit' }}>
+          <div className="card-icon"><IconVault /></div>
+          <h3>Evidence Vault</h3>
+          <p style={{ fontSize: '0.88rem' }}>
+            A record of what evidence you have and where it pertains to.
+          </p>
+          <span className="flex-between" style={{ marginTop: '8px' }}>
+            <span className="text-faint" style={{ fontSize: '0.82rem' }}>View</span>
             <IconChevronRight />
           </span>
         </Link>

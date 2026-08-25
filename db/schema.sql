@@ -517,6 +517,7 @@ INSERT INTO features (feature_key, name, room, description, status, visibility, 
   ('war_room', 'My CHEW War Room', NULL, 'Cross-room command-center view of reconciled Intelligence Core state.', 'live', 'visible', '/dashboard/lab/war-room', '{"product":true,"design":true,"engineering":true,"data":true,"compliance":true,"support":false,"analytics":false}'),
   ('credit_secret_weapon', 'Your Credit Secret Weapon', 'credit', 'Strategic synthesis view of the Credit room''s reconciled intelligence.', 'live', 'visible', '/dashboard/lab/credit/secret-weapon', '{"product":true,"design":true,"engineering":true,"data":true,"compliance":true,"support":false,"analytics":false}'),
   ('capability_graph', 'CHEW Capability Graph', NULL, 'Network routing to affiliated/external providers. No providers seeded yet.', 'internal', 'hidden', NULL, '{"product":false,"design":false,"engineering":true,"data":false,"compliance":false,"support":false,"analytics":false}'),
+  ('credit_evidence_vault', 'Evidence Vault', 'credit', 'Client-owned recordkeeping — what evidence you have and where it pertains to. Metadata only, no file storage.', 'live', 'visible', '/dashboard/lab/credit/evidence', '{"product":true,"design":true,"engineering":true,"data":true,"compliance":true,"support":false,"analytics":false}'),
   ('room_credit_builder', 'Credit Builder', 'credit-builder', 'Tradeline strategy, secured cards, rent reporting, AU strategy.', 'locked', 'teaser', '/dashboard/lab/credit-builder', '{}'),
   ('room_business', 'Business', 'business', 'Entity formation, EIN/Sunbiz filings, operating agreements, business credit stack.', 'locked', 'teaser', '/dashboard/lab/business', '{}'),
   ('room_funding', 'Funding', 'funding', 'Funding readiness, lender criteria, lines of credit, grants.', 'locked', 'teaser', '/dashboard/lab/funding', '{}'),
@@ -532,3 +533,34 @@ ON CONFLICT (feature_key) DO UPDATE SET
 -- deploy. Only the descriptive metadata stays migration-controlled.
 
 CREATE INDEX IF NOT EXISTS idx_features_room ON features(room);
+
+-- ============================================================================
+-- Evidence Vault v1 — client-owned recordkeeping (see lib/evidenceVault.js).
+-- Deliberately scoped to METADATA, not file storage: this app has no blob-
+-- storage integration (S3/Vercel Blob/etc.) and none should be wired up
+-- without the founder choosing a provider and supplying real credentials —
+-- see README's "Requires external integration" note. `storage_status`
+-- stays 'logged_only' for every row today; a real upload feature adds
+-- alongside this schema later, once that integration exists, rather than
+-- faking file storage that doesn't.
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS evidence_records (
+  id                      BIGSERIAL PRIMARY KEY,
+  user_id                 BIGINT NOT NULL REFERENCES users(id),
+  category                TEXT NOT NULL CHECK (category IN (
+                            'credit_report', 'screenshot', 'mailing_receipt', 'certified_mail',
+                            'response', 'statement', 'contract', 'license', 'business_document',
+                            'school_document', 'certification', 'financial_document', 'client_note', 'other'
+                          )),
+  title                   TEXT NOT NULL,
+  description             TEXT,
+  occurred_date           DATE, -- when the evidence pertains to (e.g. the mailing date), not when logged
+  storage_status          TEXT NOT NULL DEFAULT 'logged_only' CHECK (storage_status IN ('logged_only', 'stored_externally')),
+  related_tracker_entry_id BIGINT REFERENCES dispute_tracker_entries(id),
+  related_goal_id         BIGINT REFERENCES goals(id),
+  created_at              TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_evidence_records_user_id ON evidence_records(user_id);
+CREATE INDEX IF NOT EXISTS idx_evidence_records_tracker_entry ON evidence_records(related_tracker_entry_id);
