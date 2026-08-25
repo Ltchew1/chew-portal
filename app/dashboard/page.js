@@ -56,7 +56,14 @@ export default async function TodayPage() {
   // counts toward "locked" until it has one too.
   const dormantRoomCount = ROOMS.filter((room) => room.slug !== 'credit').length;
 
-  const lifeMapGraph = buildLifeMapGraph({ rooms: ROOMS, status, isRoomLive, creditIntel: creditRoomResult });
+  // Icons are rendered here (server side, same as every other room icon in
+  // the app) and passed down as elements — LifeMap (a client component)
+  // never needs its own icon imports or a room->icon lookup of its own.
+  const lifeMapGraph = buildLifeMapGraph({ rooms: ROOMS, status, isRoomLive, creditIntel: creditRoomResult })
+    .map((territory) => {
+      const Icon = ROOMS.find((r) => r.slug === territory.slug)?.icon;
+      return { ...territory, icon: Icon ? <Icon /> : null };
+    });
   const opportunityLadder = buildOpportunityLadder({ creditIntel: creditRoomResult, dormantRoomCount });
 
   return (
