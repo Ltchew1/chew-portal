@@ -384,3 +384,97 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id, created_at DESC);
+
+-- ============================================================================
+-- CHEW Capability Graph — "who can solve what, for whom, where, and when."
+-- Prepared per the network/affiliation directive: real database models,
+-- real matching/consent/handoff logic (see lib/capabilities.js,
+-- lib/providers.js, lib/capabilityGraph.js, lib/providerHandoff.js), with
+-- ZERO rows seeded and nothing wired into any user-facing surface yet.
+-- "Build ahead. Do not expose ahead." — the founder adds real providers and
+-- flips them to 'ready' only when a real, disclosed, licensed relationship
+-- actually exists; until then every query against this graph correctly
+-- returns nothing, by construction, not by a UI-level hack.
+-- ============================================================================
+
+-- A need CHEW can recognize (e.g. 'insurance_review', 'website_build') —
+-- distinct from a provider: a capability can exist with zero ready
+-- providers behind it, which is the honest default state for all of them
+-- today.
+CREATE TABLE IF NOT EXISTS capabilities (
+  id           BIGSERIAL PRIMARY KEY,
+  key          TEXT NOT NULL UNIQUE,
+  name         TEXT NOT NULL,
+  description  TEXT NOT NULL,
+  category     TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- One row per execution provider. `classification` is the internal
+-- relationship taxonomy from the directive — never exposed to the client
+-- directly (see lib/providers.js's classification->public-disclosure
+-- mapping); `disclosure_text` is the ONLY client-facing affiliation copy,
+-- and it is deliberately never auto-generated from a template — a human
+-- (the founder, with counsel where warranted) must write it before a
+-- provider can ever be marked 'ready'. See lib/providers.js's
+-- isReadyForRouting() for the full checklist this table exists to enforce.
+CREATE TABLE IF NOT EXISTS providers (
+  id                  BIGSERIAL PRIMARY KEY,
+  name                TEXT NOT NULL,
+  classification      TEXT NOT NULL CHECK (classification IN (
+                        'chew_direct', 'affiliated_enterprise', 'independent_professional',
+                        'external_provider', 'future_managed_service'
+                      )),
+  service_status      TEXT NOT NULL DEFAULT 'draft' CHECK (service_status IN ('draft', 'ready', 'paused', 'retired')),
+  jurisdiction         TEXT,
+  licensing_note       TEXT, -- required content before 'ready' (see isReadyForRouting) — e.g. "N/A, no license required"
+  contact_method       TEXT, -- internal routing detail, not directly rendered to a client in v1
+  intake_process       TEXT,
+  disclosure_text      TEXT, -- founder-authored; the only affiliation copy ever shown to a client
+  data_sharing_notes   TEXT,
+  escalation_process   TEXT,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Which providers can serve which capabilities, and the specifics of that
+-- pairing (a provider might be ready for one capability and not another).
+CREATE TABLE IF NOT EXISTS capability_providers (
+  id                    BIGSERIAL PRIMARY KEY,
+  capability_id         BIGINT NOT NULL REFERENCES capabilities(id),
+  provider_id           BIGINT NOT NULL REFERENCES providers(id),
+  is_active             BOOLEAN NOT NULL DEFAULT false, -- a second gate on top of providers.service_status
+  eligibility_notes     TEXT,
+  client_profile_fit    TEXT,
+  prerequisite_steps    JSONB NOT NULL DEFAULT '[]',
+  documents_needed      JSONB NOT NULL DEFAULT '[]',
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_capability_providers_pair ON capability_providers(capability_id, provider_id);
+CREATE INDEX IF NOT EXISTS idx_capability_providers_capability ON capability_providers(capability_id);
+
+-- The closed-loop handoff record — CHEW never sends client data to a
+-- provider without an explicit, logged consent step first (see
+-- lib/providerHandoff.js). `fields_disclosed` is exactly what the client
+-- was shown and agreed to before `consented_at` is set; nothing can
+-- transition to 'handed_off' without it.
+CREATE TABLE IF NOT EXISTS provider_handoffs (
+  id                 BIGSERIAL PRIMARY KEY,
+  user_id            BIGINT NOT NULL REFERENCES users(id),
+  capability_id      BIGINT NOT NULL REFERENCES capabilities(id),
+  provider_id        BIGINT NOT NULL REFERENCES providers(id),
+  related_goal_id    BIGINT REFERENCES goals(id),
+  status             TEXT NOT NULL DEFAULT 'consent_pending' CHECK (status IN (
+                        'consent_pending', 'consent_given', 'handed_off', 'outcome_received', 'declined'
+                      )),
+  fields_disclosed   JSONB NOT NULL DEFAULT '[]', -- exactly what was shown to the client pre-consent
+  consented_at       TIMESTAMPTZ,
+  handed_off_at      TIMESTAMPTZ,
+  outcome_note       TEXT,
+  outcome_received_at TIMESTAMPTZ,
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_provider_handoffs_user_id ON provider_handoffs(user_id);

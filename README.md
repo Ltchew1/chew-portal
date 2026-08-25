@@ -556,6 +556,69 @@ materially different scope than Credit's FCRA-bounded dispute education.
   Changes").
 - Brand styling — matches joinchew.com's colors and fonts already
 
+## CHEW Capability Graph — built ahead, not exposed ahead
+
+Per the network/affiliation directive: CHEW is meant to eventually route a
+client to specialized help it doesn't perform itself — an affiliated
+company, an independent licensed professional, an external provider —
+without ever collapsing those distinct businesses into "CHEW," and without
+ever hiding a material affiliation either. Since **zero real providers
+exist yet**, the only honest thing to build right now is the real backend
+architecture, fully working and tested, with **nothing wired into any
+surface a client can reach.**
+
+- **`capabilities` / `providers` / `capability_providers` / `provider_handoffs`
+  tables** (`lib/capabilities.js`, `lib/providers.js`, `lib/capabilityGraph.js`,
+  `lib/providerHandoff.js`) — real database models and real matching/consent/
+  handoff logic, per the directive's "prepare: database models; provider
+  records; routing logic; ... intake schemas; handoff architecture."
+- **`isReadyForRouting()`** (`lib/providers.js`) turns the directive's
+  provider-readiness checklist (status, jurisdiction, licensing, contact/
+  routing method, intake process, disclosure language, data-sharing notes,
+  escalation process) into an actual gate every field must pass — not a
+  policy document. `disclosure_text` is never auto-generated from a
+  classification template; a provider can't reach 'ready' without a human
+  (the founder, with counsel where warranted) having written real
+  disclosure copy for that specific relationship.
+- **`shapeForClient()`** (`lib/capabilityGraph.js`) is the one place "do not
+  expose internal classifications unnecessarily to the customer" is
+  enforced in code — a client-facing match result never carries
+  `classification`, `contactMethod`, or `licensingNote`, only the curated
+  `disclosure` field plus what's needed to act (intake process,
+  prerequisites, documents). Verified by direct execution, including that a
+  provider missing even one readiness field (or one with a whitespace-only
+  disclosure) is correctly excluded.
+- **`provider_handoffs`** implements the closed loop
+  (detect → explain → prepare → route → execute → outcome → CHEW
+  recalculates) as real status transitions: a handoff cannot reach
+  `handed_off` without `consented_at` being set first, and `consented_at`
+  is only ever set by a call that states exactly which fields were
+  disclosed — the directive's "show what will be shared; allow consent;
+  log the consent." An outcome logs a `provider_outcome_received` event
+  into the same universal event log the Credit room's Intelligence Core
+  already reads (see above), so a future recommendation can react to a
+  provider's result the same way it reacts to a Credit room event today.
+- **`lib/networkRouting.js`** is the explicit gate: `NETWORK_ROUTING_LIVE =
+  false`. Nothing in Ask CHEW, notifications, recommendations, or
+  navigation checks the Capability Graph while it's false — this isn't a
+  UI-level hide, the graph is simply never queried from any client-facing
+  code path yet. `getExpansionNotice()` holds the directive's sanctioned
+  generic, non-specific expansion copy ("CHEW is expanding the network of
+  services available through the platform"), ready to place — deliberately
+  **not wired into the Lab hub in this pass**, since the hub's existing
+  room gallery already communicates expansion honestly (five real "coming
+  to your Lab" tiles), and a vague added line would be filler rather than
+  useful, an actual product-design call for the founder rather than
+  something to guess at.
+
+Turning this on for real, later: seed a real `capabilities` row, seed a
+real `providers` row with founder-authored (and counsel-reviewed, where the
+relationship warrants it) disclosure/licensing/data-sharing text, mark it
+`ready`, link it via `capability_providers` with `is_active = true`, and
+only then flip `NETWORK_ROUTING_LIVE` and wire one real intent into Ask
+CHEW pointing at `matchCapability()`. Nothing about that sequence requires
+touching this phase's code again.
+
 ## What's next (not built yet, on purpose)
 
 Appointments, Documents, Dispute Tracking, and AI Guidance are shown as
