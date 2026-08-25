@@ -12,6 +12,7 @@ import { currentUser } from '@clerk/nextjs/server';
 import GoldProgressRing from '../components/lab/GoldProgressRing';
 import RevealOnScroll from '../components/lab/RevealOnScroll';
 import ChewMoveCard from '../components/today/ChewMoveCard';
+import WhatsWaiting from '../components/today/WhatsWaiting';
 import LifeMapPreview from '../components/today/LifeMapPreview';
 import OpportunityLadder from '../components/today/OpportunityLadder';
 import ComingToCommandCenter from '../components/today/ComingToCommandCenter';
@@ -20,9 +21,10 @@ import { ROOMS } from '../../lib/rooms';
 import { statusFromClerkUser, hasRequiredStatus } from '../../lib/clientStatus';
 import { listFeatures, evaluateFeatureAccess, roomFeatureKey } from '../../lib/features';
 import { reconcileCreditIntelligence } from '../../lib/intelligenceCore';
+import { listRecentNotifications } from '../../lib/notifications';
 import {
   timeOfDayGreeting, canSeeRoomIntelligence, buildChangeSummary,
-  buildAccountLevelMove, buildLifeMapDomains, buildOpportunityLadder,
+  buildAccountLevelMove, buildLifeMapDomains, buildOpportunityLadder, buildRecentlyResolved,
 } from '../../lib/todayIntelligence';
 
 const STATUS_LABELS = { applicant: 'Applicant', accepted: 'Accepted', paid: 'Paid' };
@@ -32,19 +34,21 @@ export default async function TodayPage() {
   const firstName = user?.firstName || 'there';
   const status = statusFromClerkUser(user);
 
-  const [features] = await Promise.all([listFeatures()]);
+  const [features, notifications] = await Promise.all([listFeatures(), listRecentNotifications(user.id, 20)]);
   const featuresByKey = new Map(features.map((f) => [f.featureKey, f]));
   const isRoomLive = (slug) => evaluateFeatureAccess(featuresByKey.get(roomFeatureKey(slug)), user);
 
   const creditRoom = ROOMS.find((room) => room.slug === 'credit');
   const canSeeCredit = canSeeRoomIntelligence(status, creditRoom) && isRoomLive('credit');
   const creditRoomResult = canSeeCredit ? await reconcileCreditIntelligence(user.id) : null;
+  const recentlyResolved = buildRecentlyResolved(notifications);
 
   const { changedCount, attentionCount } = creditRoomResult
     ? buildChangeSummary([creditRoomResult])
     : { changedCount: 0, attentionCount: 0 };
 
   const move = creditRoomResult?.nextBestMove ?? buildAccountLevelMove(status);
+  const urgentMove = creditRoomResult?.planStatus === 'plan_at_risk';
 
   const readyCount = ROOMS.filter((room) => isRoomLive(room.slug) && hasRequiredStatus(status, room.requiredStatus)).length;
   // Only Credit has a real opportunity-detection pipeline today (see
@@ -84,14 +88,15 @@ export default async function TodayPage() {
         </div>
       </div>
 
-      <ChewMoveCard move={move} />
+      <ChewMoveCard move={move} urgent={urgentMove} />
 
       {creditRoomResult && (creditRoomResult.whatChanged.length > 0 || creditRoomResult.chewNoticed.length > 0) && (
         <RevealOnScroll className="today-reveal">
+          <span className="today-section-eyebrow">What changed</span>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
             {creditRoomResult.whatChanged.length > 0 && (
               <div className="card">
-                <h3 style={{ marginBottom: '10px' }}>What changed</h3>
+                <h3 style={{ marginBottom: '10px' }}>Since last time</h3>
                 <ul style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: '18px', fontSize: '0.85rem' }}>
                   {creditRoomResult.whatChanged.map((c, i) => <li key={i}>{c.text}</li>)}
                 </ul>
@@ -112,11 +117,20 @@ export default async function TodayPage() {
         </RevealOnScroll>
       )}
 
+      {creditRoomResult && (creditRoomResult.activeBarriers?.length > 0 || recentlyResolved.length > 0) && (
+        <RevealOnScroll className="today-reveal">
+          <span className="today-section-eyebrow">What&apos;s waiting</span>
+          <WhatsWaiting barriers={creditRoomResult.activeBarriers} recentlyResolved={recentlyResolved} />
+        </RevealOnScroll>
+      )}
+
       <RevealOnScroll className="today-reveal">
+        <span className="today-section-eyebrow">What&apos;s opening</span>
         <OpportunityLadder ladder={opportunityLadder} />
       </RevealOnScroll>
 
       <RevealOnScroll className="today-reveal">
+        <span className="today-section-eyebrow">Your world</span>
         <LifeMapPreview domains={lifeMapDomains} />
       </RevealOnScroll>
 

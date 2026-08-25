@@ -937,7 +937,50 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
   text-transform: uppercase;
   margin-bottom: 12px;
 }
+.chew-move-eyebrow--urgent { color: var(--danger); }
 .chew-move-action { font-size: clamp(1.35rem, 3vw, 1.75rem); margin-bottom: 4px; }
+
+/* The impact chain — "1 move -> removes N constraints -> advances N
+   goals -> unlocks N pathways." Each step fades/slides in on its own
+   beat (see the inline animationDelay in ImpactChain) so the sequence
+   reads as consequence unfolding, not a static row of stats. Wraps on
+   mobile rather than scrolling, since the chip count here is always
+   small (at most 3 real values). */
+.chew-move-impact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 14px 0 4px;
+}
+.chew-move-impact-source {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-faint);
+  padding: 5px 12px;
+}
+@keyframes impact-step-in {
+  from { opacity: 0; transform: translateX(-6px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.chew-move-impact-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  animation: impact-step-in 0.45s ease both;
+}
+.chew-move-impact-arrow { color: var(--text-faintest); flex-shrink: 0; }
+.chew-move-impact-chip {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--gold-light);
+  background: rgba(201,162,39,0.1);
+  border: 1px solid var(--panel-border);
+  padding: 5px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
 .chew-move-toggle {
   display: inline-flex; align-items: center; gap: 6px;
   background: none; border: none; padding: 0;
@@ -1000,6 +1043,29 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
   margin-top: 8px;
   font-size: 0.76rem; font-weight: 600;
   color: var(--gold-light);
+}
+
+/* What's Waiting — active barriers, plus the ones that just dissolved.
+   The dissolved treatment is the directive's "if a constraint disappears,
+   show that relationship": lower opacity, a strikethrough-style divider,
+   and the same success badge used everywhere else in the app for
+   "resolved" — never a new color vocabulary just for this one moment. */
+.waiting-item { padding: 12px 0; }
+.waiting-item + .waiting-item { border-top: 1px solid var(--divider); }
+.waiting-item--dissolved { opacity: 0.68; }
+
+/* Section eyebrows — the priority-hierarchy kickers ("What's opening,"
+   "Your world," etc.) that sit above a section heading, quieter than
+   .today-eyebrow (the page-level one) so the hierarchy reads top-down:
+   page -> section -> card title. */
+.today-section-eyebrow {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 8px;
 }
 
 /* Opportunity Ladder — layered, not a flat list. The locked tier is
