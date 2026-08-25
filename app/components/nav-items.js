@@ -9,7 +9,7 @@ import {
 // Readiness are Phase 2 (Financial Health / Business Readiness / Funding
 // Readiness scores); Appointments and Progress fold into Tasks for now.
 export const NAV_ITEMS = [
-  { label: 'Dashboard', href: '/dashboard', icon: IconHome },
+  { label: 'Today', href: '/dashboard', icon: IconHome },
   { label: 'Blueprint', href: '/dashboard/blueprint', icon: IconShield },
   { label: 'Education', href: '/dashboard/education', icon: IconBook },
   { label: 'The Lab', href: '/dashboard/lab', icon: IconFlask },

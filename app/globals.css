@@ -846,6 +846,197 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
   .lab-access-row { flex-direction: column; align-items: flex-start; text-align: left; }
 }
 
+/* ---------- Today: the portal home screen ---------- */
+/* Same living-gold-light language as .lab-hub-bg (CHEW: The Lab hero),
+   deliberately reused rather than reinvented — Today and The Lab are
+   "connected views of one CHEW intelligence system," not two products
+   with two different visual languages. Kept as its own class (not a
+   shared selector) so either surface's glow/timing can be tuned on its
+   own later without touching the other. */
+.today-bg {
+  position: relative;
+  padding: 4px 4px 8px;
+  margin: -4px -4px 0;
+}
+.today-bg::before,
+.today-bg::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+}
+.today-bg::before {
+  inset: -60px -60px -20%;
+  background:
+    radial-gradient(ellipse 55% 45% at 15% 0%, rgba(201,162,39,0.2) 0%, transparent 62%),
+    radial-gradient(ellipse 40% 35% at 95% 15%, rgba(201,162,39,0.08) 0%, transparent 65%);
+  animation: living-glow-breathe 9s ease-in-out infinite;
+}
+.today-bg::after {
+  inset: -60px -60px -20%;
+  opacity: 0.03;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.today-bg > * { position: relative; z-index: 1; }
+
+.today-eyebrow {
+  display: block;
+  font-size: 0.76rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold-light);
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.today-greeting {
+  font-size: clamp(1.9rem, 4.5vw, 2.8rem);
+  margin-bottom: 8px;
+}
+.today-summary {
+  font-size: 1rem;
+  color: var(--text-faint);
+  max-width: 56ch;
+}
+
+/* THE CHEW MOVE — Today's hero card. Not just another .card: a step
+   heavier surface and a hairline gold border mark it as the one thing on
+   the screen the client is meant to act on, echoing but exceeding
+   .next-move-card's treatment (that one sits among several cards inside a
+   room; this one *is* the room). */
+/* The CHEW Move reveal — a one-time resolve on mount, since this card is
+   always the first meaningful thing on the page (never scroll-triggered
+   like .life-map-node). A brief rise + glow flash, not a spectacle: the
+   move itself is real and singular, so the moment introducing it should
+   feel confident, not theatrical. */
+@keyframes chew-move-resolve {
+  0% { opacity: 0; transform: translateY(16px) scale(0.985); box-shadow: 0 24px 50px rgba(0,0,0,0.5), 0 0 0 rgba(201,162,39,0); }
+  60% { box-shadow: 0 24px 50px rgba(0,0,0,0.5), 0 0 56px rgba(201,162,39,0.28); }
+  100% { opacity: 1; transform: translateY(0) scale(1); box-shadow: 0 24px 50px rgba(0,0,0,0.5), 0 0 44px rgba(201,162,39,0.1); }
+}
+.chew-move-card {
+  position: relative;
+  margin: 28px 0;
+  padding: 32px 30px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--panel-border-strong);
+  background:
+    linear-gradient(155deg, rgba(255,255,255,0.05), rgba(255,255,255,0) 30%),
+    linear-gradient(180deg, rgba(201,162,39,0.08), rgba(201,162,39,0) 55%),
+    var(--black-elev);
+  box-shadow: 0 24px 50px rgba(0,0,0,0.5), 0 0 44px rgba(201,162,39,0.1), inset 0 1px 0 rgba(255,255,255,0.06);
+  animation: chew-move-resolve 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.15s;
+}
+.chew-move-eyebrow {
+  display: flex; align-items: center; gap: 8px;
+  color: var(--gold-light);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.chew-move-action { font-size: clamp(1.35rem, 3vw, 1.75rem); margin-bottom: 4px; }
+.chew-move-toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: none; border: none; padding: 0;
+  color: var(--text-faint);
+  font-family: inherit; font-size: 0.85rem; font-weight: 600;
+  cursor: pointer;
+  margin: 10px 0;
+}
+.chew-move-toggle:hover { color: var(--gold-light); }
+.chew-move-reasoning {
+  display: grid; gap: 12px;
+  margin: 4px 0 20px;
+  padding: 16px 18px;
+  border-radius: var(--radius);
+  background: rgba(0,0,0,0.2);
+  border: 1px solid var(--divider);
+}
+.chew-move-reasoning div { display: grid; gap: 2px; }
+.chew-move-reasoning dt {
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--gold-light);
+}
+.chew-move-reasoning dd { margin: 0; font-size: 0.88rem; color: var(--text); }
+.chew-move-cta { margin-top: 6px; }
+
+/* Life Map preview — one node per real room. Deliberately quieter than
+   .room-tile: this is a status grid, not the room gallery, so it reads as
+   data at a glance rather than another set of hero cards competing with
+   the CHEW Move above it. */
+.life-map-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+.life-map-node {
+  display: block;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--divider);
+  background: rgba(255,255,255,0.02);
+  color: inherit;
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s ease, background 0.2s ease;
+}
+.life-map-node.revealed { opacity: 1; transform: translateY(0); }
+.life-map-node--enterable {
+  border-color: var(--panel-border);
+  cursor: pointer;
+}
+.life-map-node--enterable:hover {
+  border-color: var(--panel-border-strong);
+  background: rgba(201,162,39,0.05);
+  transform: translateY(-2px);
+  opacity: 1;
+}
+.life-map-node-enter {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-top: 8px;
+  font-size: 0.76rem; font-weight: 600;
+  color: var(--gold-light);
+}
+
+/* Opportunity Ladder — layered, not a flat list. The locked tier is
+   visually quieter (dashed divider, no items) so absence still reads as
+   information, per the directive's empty-state standard. */
+.opportunity-tier { margin-bottom: 16px; }
+.opportunity-tier:last-child { margin-bottom: 0; }
+.opportunity-tier-label {
+  display: block;
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 8px;
+}
+.opportunity-item { padding: 8px 0; }
+.opportunity-item + .opportunity-item { border-top: 1px solid var(--divider); }
+.opportunity-tier--locked {
+  padding-top: 12px;
+  border-top: 1px dashed var(--divider);
+}
+
+@media (max-width: 560px) {
+  .chew-move-card { padding: 24px 20px; }
+}
+
+/* Generic scroll-reveal wrapper for Today's sections below the fold
+   (see RevealOnScroll) — the same "environment wakes up as you move
+   through it" choreography as the Life Map nodes, applied at the section
+   level so each block of the page arrives on its own beat rather than
+   all at once. */
+.today-reveal {
+  margin: 24px 0;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.today-reveal.revealed { opacity: 1; transform: translateY(0); }
+
 /* ---------- Misc ---------- */
 
 .text-faint { color: var(--text-faint); }

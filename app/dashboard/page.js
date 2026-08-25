@@ -1,84 +1,128 @@
-// app/dashboard/page.js — Dashboard v1 (CHEW Rebuild Kit, Section 4)
+// app/dashboard/page.js — "Today," the portal's home screen.
 //
-// Readiness Score, active goals, and action items are meant to come from a
-// client's application record — but chew-portal has no database connection
-// or Clerk-to-application link yet (separate project, separate database).
-// This ships the real v1 layout now with honest pending states rather than
-// fabricated numbers, so wiring real data later is a props change, not a
-// rebuild.
+// Answers the portal directive's five questions in order: Where am I?
+// What changed? What matters now? What move should I make next? What
+// becomes possible afterward? Everything below is real data or an honest
+// "not yet" — see lib/todayIntelligence.js's header comment. No fabricated
+// scores, no invented opportunities, no dead links: a room-level move or
+// Life Map link only ever renders as clickable when the client's real
+// clientStatus actually clears that room's gate.
 
 import { currentUser } from '@clerk/nextjs/server';
-import Link from 'next/link';
-import { IconShield, IconTrendUp, IconClipboard, IconChevronRight } from '../components/icons';
+import GoldProgressRing from '../components/lab/GoldProgressRing';
+import RevealOnScroll from '../components/lab/RevealOnScroll';
+import ChewMoveCard from '../components/today/ChewMoveCard';
+import LifeMapPreview from '../components/today/LifeMapPreview';
+import OpportunityLadder from '../components/today/OpportunityLadder';
+import ComingToCommandCenter from '../components/today/ComingToCommandCenter';
+import { IconSparkles } from '../components/icons';
+import { ROOMS } from '../../lib/rooms';
+import { statusFromClerkUser, hasRequiredStatus } from '../../lib/clientStatus';
+import { listFeatures, evaluateFeatureAccess, roomFeatureKey } from '../../lib/features';
+import { reconcileCreditIntelligence } from '../../lib/intelligenceCore';
+import {
+  timeOfDayGreeting, canSeeRoomIntelligence, buildChangeSummary,
+  buildAccountLevelMove, buildLifeMapDomains, buildOpportunityLadder,
+} from '../../lib/todayIntelligence';
 
-const STARTER_TASKS = [
-  'Complete your Financial Blueprint intake',
-  'Book your strategy session',
-  'Review your program agreement',
-];
+const STATUS_LABELS = { applicant: 'Applicant', accepted: 'Accepted', paid: 'Paid' };
 
-export default async function DashboardPage() {
+export default async function TodayPage() {
   const user = await currentUser();
   const firstName = user?.firstName || 'there';
+  const status = statusFromClerkUser(user);
+
+  const [features] = await Promise.all([listFeatures()]);
+  const featuresByKey = new Map(features.map((f) => [f.featureKey, f]));
+  const isRoomLive = (slug) => evaluateFeatureAccess(featuresByKey.get(roomFeatureKey(slug)), user);
+
+  const creditRoom = ROOMS.find((room) => room.slug === 'credit');
+  const canSeeCredit = canSeeRoomIntelligence(status, creditRoom) && isRoomLive('credit');
+  const creditRoomResult = canSeeCredit ? await reconcileCreditIntelligence(user.id) : null;
+
+  const { changedCount, attentionCount } = creditRoomResult
+    ? buildChangeSummary([creditRoomResult])
+    : { changedCount: 0, attentionCount: 0 };
+
+  const move = creditRoomResult?.nextBestMove ?? buildAccountLevelMove(status);
+
+  const readyCount = ROOMS.filter((room) => isRoomLive(room.slug) && hasRequiredStatus(status, room.requiredStatus)).length;
+  // Only Credit has a real opportunity-detection pipeline today (see
+  // lib/homeIntelligence.js) — every other room, live or not, honestly
+  // counts toward "locked" until it has one too.
+  const dormantRoomCount = ROOMS.filter((room) => room.slug !== 'credit').length;
+
+  const lifeMapDomains = buildLifeMapDomains({ rooms: ROOMS, status, isRoomLive, creditIntel: creditRoomResult });
+  const opportunityLadder = buildOpportunityLadder({ creditIntel: creditRoomResult, dormantRoomCount });
 
   return (
-    <>
-      <span className="page-eyebrow">Dashboard</span>
-      <h1>Welcome back, {firstName}.</h1>
-      <p className="text-faint" style={{ maxWidth: '60ch' }}>
-        Your readiness, goals, and next actions will live here as your CHEW strategy comes together.
-      </p>
+    <div className="today-bg">
+      <span className="today-eyebrow">Today</span>
+      <h1 className="today-greeting">{timeOfDayGreeting()} {firstName}.</h1>
+      {creditRoomResult ? (
+        <p className="today-summary">
+          {changedCount === 0
+            ? 'Nothing new since last time.'
+            : `${changedCount} thing${changedCount === 1 ? '' : 's'} changed.`}
+          {attentionCount > 0 && ` ${attentionCount} deserve${attentionCount === 1 ? 's' : ''} your attention today.`}
+        </p>
+      ) : (
+        <p className="today-summary text-faint">
+          CHEW doesn&apos;t have enough verified information about your situation yet — here&apos;s where to start.
+        </p>
+      )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px', marginTop: '28px' }}>
-        <div className="card">
-          <div className="card-icon"><IconShield /></div>
-          <h3>Readiness Score</h3>
-          <p style={{ fontSize: '0.88rem' }}>
-            Calculated after your Financial Blueprint Assessment is reviewed.
-          </p>
-          <span className="badge badge-pending">Not yet available</span>
-        </div>
-
-        <div className="card">
-          <div className="card-icon"><IconTrendUp /></div>
-          <h3>Active Goals</h3>
-          <p style={{ fontSize: '0.88rem' }}>
-            Up to three goals, drawn from your application answers, will appear here once set with your strategist.
-          </p>
-          <span className="badge badge-pending">Not yet set</span>
-        </div>
-      </div>
-
-      <h2 style={{ marginTop: '36px' }}>Getting started</h2>
-      <p className="text-faint" style={{ maxWidth: '60ch' }}>
-        A few first steps every client works through. Track and check these off on your{' '}
-        <Link href="/dashboard/tasks">Tasks</Link> page.
-      </p>
-      <div className="card" style={{ marginTop: '16px' }}>
-        {STARTER_TASKS.map((task, i) => (
-          <div
-            key={task}
-            className="flex-between"
-            style={{
-              padding: '10px 0',
-              borderBottom: i < STARTER_TASKS.length - 1 ? '1px solid var(--divider)' : 'none',
-            }}
-          >
-            <span style={{ fontSize: '0.9rem' }}>{task}</span>
-            <span className="badge badge-neutral">Pending</span>
-          </div>
-        ))}
-        <Link
-          href="/dashboard/tasks"
-          className="flex-between"
-          style={{ paddingTop: '16px', color: 'inherit' }}
-        >
-          <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>
-            <IconClipboard /> Go to Tasks
+      <div className="lab-access-row" style={{ margin: '20px 0 32px' }}>
+        <GoldProgressRing value={readyCount} max={ROOMS.length} caption="Rooms open" />
+        <div className="lab-access-copy">
+          <strong>Your access: {STATUS_LABELS[status]}</strong>
+          <span>
+            {readyCount === 0
+              ? `No rooms open yet — Credit opens once your account reaches ${STATUS_LABELS[creditRoom.requiredStatus]}.`
+              : `${readyCount} of ${ROOMS.length} rooms open on your account.`}
           </span>
-          <IconChevronRight />
-        </Link>
+        </div>
       </div>
-    </>
+
+      <ChewMoveCard move={move} />
+
+      {creditRoomResult && (creditRoomResult.whatChanged.length > 0 || creditRoomResult.chewNoticed.length > 0) && (
+        <RevealOnScroll className="today-reveal">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
+            {creditRoomResult.whatChanged.length > 0 && (
+              <div className="card">
+                <h3 style={{ marginBottom: '10px' }}>What changed</h3>
+                <ul style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: '18px', fontSize: '0.85rem' }}>
+                  {creditRoomResult.whatChanged.map((c, i) => <li key={i}>{c.text}</li>)}
+                </ul>
+              </div>
+            )}
+            {creditRoomResult.chewNoticed.length > 0 && (
+              <div className="card">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                  <IconSparkles />
+                  <h3 style={{ margin: 0 }}>CHEW noticed</h3>
+                </div>
+                <ul style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: '18px', fontSize: '0.85rem' }}>
+                  {creditRoomResult.chewNoticed.map((n, i) => <li key={i}>{n}</li>)}
+                </ul>
+              </div>
+            )}
+          </div>
+        </RevealOnScroll>
+      )}
+
+      <RevealOnScroll className="today-reveal">
+        <OpportunityLadder ladder={opportunityLadder} />
+      </RevealOnScroll>
+
+      <RevealOnScroll className="today-reveal">
+        <LifeMapPreview domains={lifeMapDomains} />
+      </RevealOnScroll>
+
+      <RevealOnScroll className="today-reveal">
+        <ComingToCommandCenter />
+      </RevealOnScroll>
+    </div>
   );
 }
