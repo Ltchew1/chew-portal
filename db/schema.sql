@@ -169,3 +169,21 @@ CREATE INDEX IF NOT EXISTS idx_dispute_tracker_user_id ON dispute_tracker_entrie
 ALTER TABLE dispute_tracker_entries DROP CONSTRAINT IF EXISTS dispute_tracker_entries_bureau_check;
 ALTER TABLE dispute_tracker_entries ADD CONSTRAINT dispute_tracker_entries_bureau_check
   CHECK (bureau IN ('equifax', 'experian', 'transunion', 'lexisnexis', 'innovis'));
+
+-- Widened for the tracker UI (built after the escalation ladder existed):
+-- a tracked letter can go to a furnisher, the CFPB, or the FTC, none of
+-- which have a "bureau" — bureau alone can no longer be the required
+-- field. recipient_type/recipient_name mirror generated_letters so a
+-- tracker entry can describe any stage; bureau stays for entries that
+-- really are one, and is left NULL otherwise.
+ALTER TABLE dispute_tracker_entries ALTER COLUMN bureau DROP NOT NULL;
+ALTER TABLE dispute_tracker_entries ADD COLUMN IF NOT EXISTS recipient_type TEXT NOT NULL DEFAULT 'bureau'
+  CHECK (recipient_type IN ('bureau', 'furnisher', 'secondary_bureau', 'cfpb', 'ftc'));
+ALTER TABLE dispute_tracker_entries ADD COLUMN IF NOT EXISTS recipient_name TEXT;
+
+-- One tracker entry per generated letter — "start tracking" creates it
+-- once; re-clicking on an already-tracked letter should not be able to
+-- fork a second timeline for the same physical letter. Partial index
+-- (not a table constraint) so it only applies where letter_id is set.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_dispute_tracker_letter_id
+  ON dispute_tracker_entries(letter_id) WHERE letter_id IS NOT NULL;

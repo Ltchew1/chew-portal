@@ -8,6 +8,7 @@
 // the attestation requirement).
 
 import { currentUser } from '@clerk/nextjs/server';
+import Link from 'next/link';
 import PageHeader from '../../../../components/PageHeader';
 import EmptyState from '../../../../components/EmptyState';
 import CreditRoomSubNav from '../../../../components/lab/credit/CreditRoomSubNav';
@@ -93,6 +94,10 @@ export default async function CreditLettersPage() {
               </tbody>
             </table>
           </div>
+          <p className="text-faint" style={{ fontSize: '0.85rem', marginTop: '12px' }}>
+            Once you&apos;ve mailed one, log it in the{' '}
+            <Link href="/dashboard/lab/credit/tracker">Dispute Tracker</Link> to keep your own timeline.
+          </p>
         </div>
       )}
     </>

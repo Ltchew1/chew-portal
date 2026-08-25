@@ -293,8 +293,26 @@ Run both checks together with `npm run compliance:check`.
   `/api/lab/credit/mailing-address`) since every letter needs a return
   address. Generated letters are download/print-only — see "No-transmission
   lock" above.
-- Dispute tracker and education library are not built yet.
-  `CreditRoomSubNav` shows them as "coming soon."
+- **Dispute Tracker** (`/dashboard/lab/credit/tracker`) — the client's own
+  record of what they did with each letter and what happened, never a
+  bureau-status lookup (`lib/disputeTracker.js`, `db/schema.sql`'s
+  `dispute_tracker_entries` table comment: "Nothing here is read by, or
+  written to, a bureau"). Every tracker entry starts from an already-
+  generated letter — "Start tracking" on the Tracker page (or the prompt
+  linked from the Letters page) creates one entry per letter, copying its
+  recipient info at that moment; a partial unique index on `letter_id`
+  keeps one letter from forking two timelines. From there it's a simple,
+  client-paced flow: log the date you mailed it, then whenever you know,
+  log what happened (verified / updated / deleted / never heard back) with
+  an optional note, then mark it resolved if you want to. The one
+  "intelligent" piece is informational, not a countdown: once a bureau or
+  secondary-bureau letter is marked mailed, the page notes FCRA §611's
+  ~30-day response window and, only after that window has passed, mentions
+  that a CFPB/FTC complaint citing "no response" is an option — furnisher
+  and escalation entries don't get this note, since §623 carries no
+  equivalent statutory deadline and it would be inaccurate to imply one.
+- Education library is not built yet. `CreditRoomSubNav` shows it as
+  "coming soon."
 
 ## What's real right now
 
@@ -305,8 +323,9 @@ Run both checks together with `npm run compliance:check`.
   mirrored to Clerk, gates The Lab and its rooms server-side (see above)
 - CHEW: The Lab — glass-and-gold room picker hub (`/dashboard/lab`) with
   seven rooms; Credit is fully real (guardrail framework, Report
-  Walkthrough, Self-Flagging Tool, and the full Letters generator — all
-  four escalation stages, all backed by Postgres). The other six
+  Walkthrough, Self-Flagging Tool, the full Letters generator across all
+  four escalation stages, and the Dispute Tracker — all backed by
+  Postgres). The other six
   rooms are honest "coming to your Lab" placeholders with specific,
   real feature teasers. The first-visit guided tour is real and persisted
   (see above), and correctly distinguishes "just finished the tour" from a

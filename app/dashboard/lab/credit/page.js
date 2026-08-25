@@ -11,17 +11,20 @@ import Link from 'next/link';
 import PageHeader from '../../../components/PageHeader';
 import StandingDisclosures from '../../../components/lab/credit/StandingDisclosures';
 import CreditRoomSubNav from '../../../components/lab/credit/CreditRoomSubNav';
-import { IconBook, IconScale, IconMail, IconChevronRight } from '../../../components/icons';
+import { IconBook, IconScale, IconMail, IconClipboard, IconChevronRight } from '../../../components/icons';
 import { listDisputeItemsForUser } from '../../../../lib/disputeItems';
 import { listLettersForUser } from '../../../../lib/letters';
+import { listTrackerEntriesForUser } from '../../../../lib/disputeTracker';
 
 export default async function CreditRoomPage() {
   const user = await currentUser();
-  const [items, letters] = await Promise.all([
+  const [items, letters, trackerEntries] = await Promise.all([
     listDisputeItemsForUser(user.id),
     listLettersForUser(user.id),
+    listTrackerEntriesForUser(user.id),
   ]);
   const attestedCount = items.filter((i) => i.attested_at).length;
+  const openTrackerCount = trackerEntries.filter((e) => e.status !== 'resolved').length;
 
   return (
     <>
@@ -71,6 +74,20 @@ export default async function CreditRoomPage() {
           <span className="flex-between" style={{ marginTop: '8px' }}>
             <span className="text-faint" style={{ fontSize: '0.82rem' }}>
               {letters.length === 0 ? 'None generated yet' : `${letters.length} generated`}
+            </span>
+            <IconChevronRight />
+          </span>
+        </Link>
+
+        <Link href="/dashboard/lab/credit/tracker" className="card" style={{ color: 'inherit' }}>
+          <div className="card-icon"><IconClipboard /></div>
+          <h3>Dispute Tracker</h3>
+          <p style={{ fontSize: '0.88rem' }}>
+            Log what you mailed and what happened — your own timeline, at your own pace.
+          </p>
+          <span className="flex-between" style={{ marginTop: '8px' }}>
+            <span className="text-faint" style={{ fontSize: '0.82rem' }}>
+              {trackerEntries.length === 0 ? 'Not started' : `${openTrackerCount} in progress`}
             </span>
             <IconChevronRight />
           </span>
