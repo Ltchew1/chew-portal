@@ -10,6 +10,8 @@ import { getRoomAccess, LAB_REQUIRED_STATUS } from '../../../../lib/clientStatus
 import { getRoom } from '../../../../lib/rooms';
 import { routeAskChew, parseScoreTarget } from '../../../../lib/askChew';
 import { setScoreGoal } from '../../../../lib/creditScore';
+import { getFeatureAccess, roomFeatureKey } from '../../../../lib/features';
+import { EXPANSION_LINES } from '../../../../lib/featureCopy';
 
 const CREDIT_REQUIRED_STATUS = getRoom('credit').requiredStatus;
 
@@ -30,13 +32,30 @@ export async function POST(req) {
   }
 
   const result = routeAskChew(body.text);
+  if (!result.matched) {
+    return NextResponse.json({ result });
+  }
+
+  // Ask CHEW never trusts its own keyword match as proof a room is
+  // reachable — the feature registry (lib/features.js) is re-checked here,
+  // server-side, on every call, same discipline as the score-goal dispatch
+  // below. A locked room never gets its name echoed back with specifics;
+  // it gets one of the directive's sanctioned generic expansion lines.
+  const room = getRoom(result.roomSlug);
+  const { hasAccess: roomLive } = await getFeatureAccess(roomFeatureKey(result.roomSlug));
+  if (!roomLive) {
+    return NextResponse.json({
+      result: {
+        matched: true, roomLive: false,
+        roomName: room?.name ?? result.label,
+        message: EXPANSION_LINES[0],
+      },
+    });
+  }
 
   // The one intent currently wired to actually activate a CHEW system
-  // rather than just link to it — see lib/askChew.js's file comment. Only
-  // dispatches when the matched room is actually open on this account
-  // (re-checked independently here, not trusted from the match alone) and
-  // a real, in-range score was present in the text.
-  if (result.matched && result.dispatch === 'score_goal' && result.roomBuilt) {
+  // rather than just link to it — see lib/askChew.js's file comment.
+  if (result.dispatch === 'score_goal') {
     const targetScore = parseScoreTarget(body.text);
     if (targetScore) {
       const { hasAccess: hasCreditAccess } = await getRoomAccess(CREDIT_REQUIRED_STATUS);
@@ -49,11 +68,11 @@ export async function POST(req) {
           targetScore,
         });
         return NextResponse.json({
-          result: { ...result, dispatched: true, dispatchType: 'goal_set', targetScore, goal },
+          result: { ...result, roomLive: true, dispatched: true, dispatchType: 'goal_set', targetScore, goal },
         });
       }
     }
   }
 
-  return NextResponse.json({ result });
+  return NextResponse.json({ result: { ...result, roomLive: true } });
 }

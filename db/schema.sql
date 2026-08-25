@@ -478,3 +478,57 @@ CREATE TABLE IF NOT EXISTS provider_handoffs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_provider_handoffs_user_id ON provider_handoffs(user_id);
+
+-- ============================================================================
+-- Universal feature-status registry — "hidden UI is not security." Every
+-- room and named capability in the portal (built or not) gets one row here,
+-- and lib/features.js's getFeatureAccess() is the one server-side gate
+-- every page/route for a non-'live' feature must call before rendering or
+-- mutating anything. See db/schema.sql's seed block below for today's real
+-- statuses — this table is the actual source of truth the UI reads from,
+-- not documentation describing a separate convention.
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS features (
+  id                   BIGSERIAL PRIMARY KEY,
+  feature_key          TEXT NOT NULL UNIQUE,
+  name                 TEXT NOT NULL,
+  room                 TEXT,
+  description          TEXT NOT NULL,
+  status               TEXT NOT NULL DEFAULT 'locked' CHECK (status IN ('internal', 'preview', 'locked', 'beta', 'live')),
+  visibility           TEXT NOT NULL DEFAULT 'hidden' CHECK (visibility IN ('hidden', 'teaser', 'visible')),
+  allowed_roles        JSONB NOT NULL DEFAULT '[]',
+  beta_cohort          JSONB NOT NULL DEFAULT '[]', -- clerk_user_ids explicitly approved for a 'beta' feature
+  route                TEXT,
+  api_namespace        TEXT,
+  launch_requirements  TEXT,
+  compliance_status    TEXT,
+  readiness_gates      JSONB NOT NULL DEFAULT '{}', -- {product,design,engineering,data,compliance,support,analytics: bool}
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Seeded here, not via an admin UI that doesn't exist — these rows describe
+-- THIS codebase's own rooms/capabilities, so they belong in the migration
+-- that ships them, same as everything else in this file. Idempotent
+-- (INSERT ... ON CONFLICT), safe to re-run.
+INSERT INTO features (feature_key, name, room, description, status, visibility, route, readiness_gates) VALUES
+  ('room_credit', 'Credit', 'credit', 'Report education, self-flagging, letters, tracker, and score path.', 'live', 'visible', '/dashboard/lab/credit', '{"product":true,"design":true,"engineering":true,"data":true,"compliance":true,"support":true,"analytics":false}'),
+  ('war_room', 'My CHEW War Room', NULL, 'Cross-room command-center view of reconciled Intelligence Core state.', 'live', 'visible', '/dashboard/lab/war-room', '{"product":true,"design":true,"engineering":true,"data":true,"compliance":true,"support":false,"analytics":false}'),
+  ('credit_secret_weapon', 'Your Credit Secret Weapon', 'credit', 'Strategic synthesis view of the Credit room''s reconciled intelligence.', 'live', 'visible', '/dashboard/lab/credit/secret-weapon', '{"product":true,"design":true,"engineering":true,"data":true,"compliance":true,"support":false,"analytics":false}'),
+  ('capability_graph', 'CHEW Capability Graph', NULL, 'Network routing to affiliated/external providers. No providers seeded yet.', 'internal', 'hidden', NULL, '{"product":false,"design":false,"engineering":true,"data":false,"compliance":false,"support":false,"analytics":false}'),
+  ('room_credit_builder', 'Credit Builder', 'credit-builder', 'Tradeline strategy, secured cards, rent reporting, AU strategy.', 'locked', 'teaser', '/dashboard/lab/credit-builder', '{}'),
+  ('room_business', 'Business', 'business', 'Entity formation, EIN/Sunbiz filings, operating agreements, business credit stack.', 'locked', 'teaser', '/dashboard/lab/business', '{}'),
+  ('room_funding', 'Funding', 'funding', 'Funding readiness, lender criteria, lines of credit, grants.', 'locked', 'teaser', '/dashboard/lab/funding', '{}'),
+  ('room_intelligence', 'Financial Intelligence', 'intelligence', 'Business survival data, licensing guides, financial literacy library.', 'locked', 'teaser', '/dashboard/lab/intelligence', '{}'),
+  ('room_money_systems', 'Money Systems', 'money-systems', 'Cash flow, budgeting, banking access, habit building, tracking tools.', 'locked', 'teaser', '/dashboard/lab/money-systems', '{}'),
+  ('room_referral', 'Referral Hub', 'referral', 'Invite your circle, track referral status.', 'locked', 'teaser', '/dashboard/lab/referral', '{}')
+ON CONFLICT (feature_key) DO UPDATE SET
+  name = EXCLUDED.name, room = EXCLUDED.room, description = EXCLUDED.description, route = EXCLUDED.route;
+-- Deliberately does NOT overwrite status/visibility/readiness_gates on
+-- conflict — this file re-runs on every deploy, and a status the founder
+-- changed by hand (e.g. flipping a room to 'preview' for internal testing)
+-- must never get silently reverted back to its seed default by the next
+-- deploy. Only the descriptive metadata stays migration-controlled.
+
+CREATE INDEX IF NOT EXISTS idx_features_room ON features(room);

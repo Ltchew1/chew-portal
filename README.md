@@ -556,6 +556,60 @@ materially different scope than Credit's FCRA-bounded dispute education.
   Changes").
 - Brand styling — matches joinchew.com's colors and fonts already
 
+## Universal feature-status system — "hidden UI is not security"
+
+Every room and named capability now has one row in the `features` table
+(`lib/features.js`), and every page/route behind a non-`live` feature calls
+`getFeatureAccess(featureKey)` itself, server-side, before rendering or
+mutating anything — no middleware wildcard, no CSS-only hiding, no trusting
+a frontend flag. Statuses: `internal` (Clerk `publicMetadata.chewInternal`
+staff only), `preview` (same), `locked` (nobody, no exceptions — not even
+staff; use `preview` for internal testing instead), `beta` (an explicit
+`beta_cohort` allowlist of clerk_user_ids), `live` (production). A feature
+key with no registry row fails closed.
+
+- **`lib/rooms.js`'s old `built: true/false` flag is gone.** It was a
+  second, driftable source of truth alongside the new registry; the Lab
+  hub, Ask CHEW, and each room's own placeholder now all resolve "is this
+  actually released" from the same `features` table via
+  `roomFeatureKey(slug)` — one source of truth, not two that could
+  disagree.
+- **The 6 not-yet-built rooms** (Credit Builder, Business, Funding,
+  Financial Intelligence, Money Systems, Referral Hub) render
+  `LockedFeatureCard` — a premium "Coming to CHEW" presentation with no
+  `<button>`, no `<Link>`, no click target at all (never an ugly disabled
+  button, and never a real affordance pretending to work). Copy status
+  label ("Coming Soon" / "In Development") comes from the registry, not a
+  hardcoded string.
+- **Ask CHEW re-verifies room status server-side on every call**
+  (`app/api/home/ask/route.js`), independent of its own keyword match —
+  routing to a locked room never happens, and the response uses the
+  directive's sanctioned elegant copy (`lib/featureCopy.js`) rather than
+  naming what's specifically missing.
+- **War Room and Secret Weapon** — built and shipped as real, live
+  features in the prior phase — are now registered in the same table
+  (`war_room`, `credit_secret_weapon`, both `status='live'`) and their
+  pages independently call `getFeatureAccess()` too, so a future status
+  change in the database takes effect immediately with no code change.
+- **The Capability Graph** (network/provider routing, previous phase) is
+  registered as `capability_graph`, `status='internal'` — consistent
+  documentation, no behavior change; it was already unreachable by
+  construction.
+- Verified by direct execution against `evaluateFeatureAccess()` (the pure
+  decision function `getFeatureAccess()` wraps): live/locked/beta/internal/
+  preview all behave correctly, including that `locked` denies internal
+  staff too, a missing registry row fails closed, an unrecognized status
+  string fails closed, and `chewInternal: "true"` (string, not boolean)
+  correctly does **not** grant internal access — a real type-confusion bug
+  class this test specifically ruled out.
+- `isReadyToGoLive()` / `releaseGateStatus()` turn the directive's Release
+  Gate checklist (Product/Design/Engineering/Data/Compliance/Support/
+  Analytics) into a real read of each feature's `readiness_gates` — for
+  whoever decides a feature is ready to flip to `live`, never used to grant
+  access itself.
+
+`npm run compliance:check` and `npx next build` both pass clean.
+
 ## CHEW Capability Graph — built ahead, not exposed ahead
 
 Per the network/affiliation directive: CHEW is meant to eventually route a

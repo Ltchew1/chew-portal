@@ -15,12 +15,14 @@
 
 import PageHeader from '../../../components/PageHeader';
 import EmptyState from '../../../components/EmptyState';
+import LockedFeatureCard from '../../../components/lab/LockedFeatureCard';
 import RecommendationExplainer from '../../../components/lab/RecommendationExplainer';
 import { IconFlask, IconChevronRight } from '../../../components/icons';
 import Link from 'next/link';
-import { currentUser } from '@clerk/nextjs/server';
 import { reconcileHomeIntelligence, getRecommendationHistory } from '../../../../lib/intelligenceCore';
 import { countEvents } from '../../../../lib/events';
+import { getFeatureAccess } from '../../../../lib/features';
+import { STATUS_LABELS } from '../../../../lib/featureCopy';
 
 const ROOM_LABELS = { credit: 'Credit' };
 
@@ -117,7 +119,21 @@ function RoomWarRoom({ roomIntel, history, completedMoves }) {
 }
 
 export default async function WarRoomPage() {
-  const user = await currentUser();
+  const { user, hasAccess, feature } = await getFeatureAccess('war_room');
+  if (!hasAccess) {
+    return (
+      <>
+        <PageHeader eyebrow="The Lab" title="My CHEW War Room" description="A command-center view of your plan." />
+        <LockedFeatureCard
+          icon={<IconFlask />}
+          name={feature?.name ?? 'My CHEW War Room'}
+          description={feature?.description ?? 'A command-center view of your plan is coming to CHEW.'}
+          statusLabel={STATUS_LABELS[feature?.status] ?? STATUS_LABELS.locked}
+        />
+      </>
+    );
+  }
+
   const homeIntelligence = await reconcileHomeIntelligence(user.id);
   const roomsWithData = homeIntelligence.rooms.filter((r) => r.planStatus !== null || r.counts.unattested > 0);
 

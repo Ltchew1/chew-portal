@@ -33,10 +33,11 @@ import { hasCompletedTour } from '../../../lib/tour';
 import { reconcileHomeIntelligence } from '../../../lib/intelligenceCore';
 import { listRecentNotifications } from '../../../lib/notifications';
 import NotificationsPanel from '../../components/lab/NotificationsPanel';
+import { listFeatures, evaluateFeatureAccess, roomFeatureKey } from '../../../lib/features';
 
 const STATUS_LABELS = { applicant: 'Applicant', accepted: 'Accepted', paid: 'Paid' };
 
-function RoomTileBody({ room, unlocked, enterable }) {
+function RoomTileBody({ room, unlocked, live, enterable }) {
   const Icon = room.icon;
   return (
     <>
@@ -54,26 +55,26 @@ function RoomTileBody({ room, unlocked, enterable }) {
       )}
 
       <span className="enter-affordance">
-        {!room.built
+        {!live
           ? 'Coming to your Lab'
           : unlocked
             ? 'Enter'
             : `Unlocks at ${STATUS_LABELS[room.requiredStatus]}`}
-        {/* Only show an affordance icon when a room is actually built —
-            an unbuilt-but-status-unlocked room isn't "locked," it just
-            isn't ready, so a lock icon there would be misleading. */}
-        {room.built && (enterable ? <IconChevronRight /> : <IconLock />)}
+        {/* Only show an affordance icon when a room is actually live —
+            a not-yet-released room isn't "locked," it just isn't ready,
+            so a lock icon there would be misleading. */}
+        {live && (enterable ? <IconChevronRight /> : <IconLock />)}
       </span>
     </>
   );
 }
 
-function RoomTile({ room, unlocked, index }) {
-  const enterable = unlocked && room.built;
+function RoomTile({ room, unlocked, live, index }) {
+  const enterable = unlocked && live;
   const tileClass = [
     'room-tile',
     room.slug === 'credit' ? 'room-tile--featured' : '',
-    !room.built ? 'room-tile--dormant' : '',
+    !live ? 'room-tile--dormant' : '',
     !enterable ? 'room-tile--locked' : '',
   ].filter(Boolean).join(' ');
 
@@ -84,7 +85,7 @@ function RoomTile({ room, unlocked, index }) {
       className={tileClass}
       delay={index * 90}
     >
-      <RoomTileBody room={room} unlocked={unlocked} enterable={enterable} />
+      <RoomTileBody room={room} unlocked={unlocked} live={live} enterable={enterable} />
     </RevealOnScroll>
   );
 }
@@ -100,17 +101,26 @@ export default async function LabHubPage({ searchParams }) {
   }
 
   const firstName = user.firstName || 'there';
-  const [homeIntelligence, notifications] = await Promise.all([
+  const [homeIntelligence, notifications, features] = await Promise.all([
     reconcileHomeIntelligence(user.id),
     listRecentNotifications(user.id, 6),
+    listFeatures(),
   ]);
-  // "Ready to enter" — built AND status-unlocked. Deliberately not just
+  // The feature registry (lib/features.js) is the one source of truth for
+  // "is this room actually released," not a static built:true/false flag —
+  // same access decision Ask CHEW and each room's own placeholder now make
+  // server-side. hasRequiredStatus (clientStatus) is a separate axis: a
+  // room can be released but still gated to Paid accounts.
+  const featuresByKey = new Map(features.map((f) => [f.featureKey, f]));
+  const isRoomLive = (slug) => evaluateFeatureAccess(featuresByKey.get(roomFeatureKey(slug)), user);
+
+  // "Ready to enter" — live AND status-unlocked. Deliberately not just
   // status-unlocked: a Paid client clears every room's status threshold,
-  // but only Credit actually has content, so counting status alone would
-  // have this ring and its copy claim "6 of 6 rooms open" when 5 are
+  // but only Credit is actually released, so counting status alone would
+  // have this ring and its copy claim "7 of 7 rooms open" when 6 are
   // still stubs. The number shown here must always be one a client could
   // verify by clicking through every tile.
-  const readyCount = ROOMS.filter((room) => room.built && hasRequiredStatus(status, room.requiredStatus)).length;
+  const readyCount = ROOMS.filter((room) => isRoomLive(room.slug) && hasRequiredStatus(status, room.requiredStatus)).length;
   const creditRoom = ROOMS.find((room) => room.slug === 'credit');
 
   return (
@@ -161,6 +171,7 @@ export default async function LabHubPage({ searchParams }) {
             key={room.slug}
             room={room}
             unlocked={hasRequiredStatus(status, room.requiredStatus)}
+            live={isRoomLive(room.slug)}
             index={index}
           />
         ))}

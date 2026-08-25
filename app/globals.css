@@ -695,6 +695,40 @@ a.room-tile:active {
 .room-tile--dormant { filter: saturate(0.65); }
 .room-tile--dormant .room-icon-badge { opacity: 0.7; }
 
+/* Locked Reveal — the premium "coming to CHEW" card (see
+   app/components/lab/LockedFeatureCard.js). Same glass-and-gold surface
+   language as .room-tile, but never a click target: no hover-lift, no
+   affordance icon, just a quiet architectural visualization and a status
+   pill. */
+.locked-feature-card {
+  position: relative;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--panel-border);
+  background: linear-gradient(165deg, var(--black-elev) 0%, var(--black-soft) 75%, #0d0c0a 100%);
+  box-shadow: 0 16px 36px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.04);
+  overflow: hidden;
+}
+.locked-feature-visual {
+  height: 84px;
+  background: radial-gradient(circle at 30% 20%, rgba(201,162,39,0.12), transparent 60%), var(--black-soft);
+  border-bottom: 1px solid var(--panel-border);
+}
+.locked-feature-visual svg {
+  width: 100%; height: 100%;
+  stroke: rgba(201,162,39,0.3);
+  fill: none;
+  stroke-width: 0.5;
+}
+.locked-feature-body { padding: 22px 24px 24px; }
+.locked-feature-body h3 { margin-bottom: 6px; }
+.locked-feature-body p { color: var(--text-faint); font-size: 0.88rem; margin-bottom: 16px; }
+.badge-locked {
+  background: rgba(242,238,228,0.06);
+  color: var(--text-faint);
+  border-color: var(--divider);
+  letter-spacing: 0.08em;
+}
+
 .room-icon-badge {
   width: 54px; height: 54px;
   border-radius: 16px;

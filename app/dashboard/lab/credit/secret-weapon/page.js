@@ -6,14 +6,16 @@
 // Room, in a different, more strategic-feeling shape. Gated by
 // app/dashboard/lab/credit/layout.js (Paid) like every other Credit route.
 
-import { currentUser } from '@clerk/nextjs/server';
 import Link from 'next/link';
 import PageHeader from '../../../../components/PageHeader';
 import CreditRoomSubNav from '../../../../components/lab/credit/CreditRoomSubNav';
 import EmptyState from '../../../../components/EmptyState';
+import LockedFeatureCard from '../../../../components/lab/LockedFeatureCard';
 import { IconSparkles, IconChevronRight } from '../../../../components/icons';
 import { reconcileCreditIntelligence } from '../../../../../lib/intelligenceCore';
 import { buildCreditSecretWeapon } from '../../../../../lib/secretWeapon';
+import { getFeatureAccess } from '../../../../../lib/features';
+import { STATUS_LABELS } from '../../../../../lib/featureCopy';
 
 function Section({ label, children }) {
   return (
@@ -35,7 +37,22 @@ function ListSection({ label, items }) {
 }
 
 export default async function CreditSecretWeaponPage() {
-  const user = await currentUser();
+  const { user, hasAccess, feature } = await getFeatureAccess('credit_secret_weapon');
+  if (!hasAccess) {
+    return (
+      <>
+        <PageHeader eyebrow="The Lab · Credit" title="Your Credit Secret Weapon" description="A strategic synthesis of your plan." />
+        <CreditRoomSubNav />
+        <LockedFeatureCard
+          icon={<IconSparkles />}
+          name={feature?.name ?? 'Your Credit Secret Weapon'}
+          description={feature?.description ?? 'A deeper strategic synthesis is coming to CHEW.'}
+          statusLabel={STATUS_LABELS[feature?.status] ?? STATUS_LABELS.locked}
+        />
+      </>
+    );
+  }
+
   const intel = await reconcileCreditIntelligence(user.id);
   const started = intel.planStatus !== null;
 

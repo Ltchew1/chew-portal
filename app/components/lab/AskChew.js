@@ -91,7 +91,7 @@ export default function AskChew() {
               <Link href="/dashboard/lab/credit">updated plan in Credit</Link>.
             </p>
           ) : result.matched ? (
-            result.roomBuilt ? (
+            result.roomLive ? (
               <Link href={result.href} className="flex-between" style={{ color: 'inherit' }}>
                 <span>
                   <strong>{result.label}</strong>
@@ -101,8 +101,8 @@ export default function AskChew() {
               </Link>
             ) : (
               <p style={{ fontSize: '0.88rem' }}>
-                That lives in <strong>{result.roomName}</strong>, which isn&apos;t open in your Lab yet. When it is,
-                this is exactly where CHEW will send you.
+                CHEW&apos;s deeper <strong>{result.roomName}</strong> tools are still being built. {result.message} In
+                the meantime, your <Link href="/dashboard/lab/credit">Credit room</Link> is fully available.
               </p>
             )
           ) : (
