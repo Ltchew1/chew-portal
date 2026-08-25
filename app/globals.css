@@ -906,7 +906,7 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
    room; this one *is* the room). */
 /* The CHEW Move reveal — a one-time resolve on mount, since this card is
    always the first meaningful thing on the page (never scroll-triggered
-   like .life-map-node). A brief rise + glow flash, not a spectacle: the
+   like the Life Map's territory nodes). A brief rise + glow flash, not a spectacle: the
    move itself is real and singular, so the moment introducing it should
    feel confident, not theatrical. */
 @keyframes chew-move-resolve {
@@ -1006,43 +1006,112 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
 .chew-move-reasoning dd { margin: 0; font-size: 0.88rem; color: var(--text); }
 .chew-move-cta { margin-top: 6px; }
 
-/* Life Map preview — one node per real room. Deliberately quieter than
-   .room-tile: this is a status grid, not the room gallery, so it reads as
-   data at a glance rather than another set of hero cards competing with
-   the CHEW Move above it. */
-.life-map-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
+/* The relational Life Map (app/components/today/LifeMap.js) — an SVG edge
+   layer underneath real DOM nodes on top, so the "spatial diagram" look
+   never costs keyboard/screen-reader access: every territory and
+   sub-node is a real <button>/text, the SVG only draws connecting lines
+   and is aria-hidden. Percentage-positioned children over a fixed-aspect
+   stage (the padding-top trick) so the whole thing scales responsively
+   without recomputing layout in JS on resize. */
+.life-map-stage {
+  position: relative;
+  width: 100%;
+  padding-top: 62%;
+  margin-bottom: 18px;
 }
-.life-map-node {
-  display: block;
-  padding: 14px 16px;
+.life-map-edges {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.life-map-edge {
+  stroke: var(--divider);
+  stroke-width: 0.35;
+  transition: stroke 0.4s ease, stroke-width 0.4s ease;
+}
+.life-map-edge--active { stroke: var(--panel-border-strong); stroke-width: 0.5; }
+.life-map-edge--sub { stroke: rgba(201,162,39,0.4); stroke-width: 0.4; }
+
+.life-map-anchor {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle, rgba(201,162,39,0.22), rgba(201,162,39,0.04));
+  border: 1px solid var(--panel-border-strong);
+  color: var(--gold-light);
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+  cursor: default;
+}
+
+.life-map-territory {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 10px 14px;
+  min-width: 108px;
   border-radius: var(--radius);
   border: 1px solid var(--divider);
-  background: rgba(255,255,255,0.02);
+  background: linear-gradient(165deg, var(--black-elev) 0%, var(--black-soft) 100%);
   color: inherit;
-  opacity: 0;
-  transform: translateY(14px);
-  transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 0.2s ease, background 0.2s ease;
-}
-.life-map-node.revealed { opacity: 1; transform: translateY(0); }
-.life-map-node--enterable {
-  border-color: var(--panel-border);
+  font-family: inherit;
   cursor: pointer;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
 }
-.life-map-node--enterable:hover {
-  border-color: var(--panel-border-strong);
-  background: rgba(201,162,39,0.05);
-  transform: translateY(-2px);
-  opacity: 1;
+.life-map-territory:hover { border-color: var(--panel-border-strong); transform: translate(-50%, -50%) translateY(-2px); }
+.life-map-territory-name { font-size: 0.82rem; font-weight: 600; text-align: center; }
+.life-map-territory--selected {
+  border-color: var(--gold-light);
+  box-shadow: 0 0 0 1px rgba(201,162,39,0.3), 0 8px 24px rgba(201,162,39,0.18);
 }
-.life-map-node-enter {
-  display: inline-flex; align-items: center; gap: 4px;
-  margin-top: 8px;
-  font-size: 0.76rem; font-weight: 600;
-  color: var(--gold-light);
+/* State-driven glow — a whisper of color behind the node so the member
+   reads state partly through light before reading the badge text, per
+   the directive's visual-state-language request. Kept subtle: this is a
+   map the member returns to often, not a one-time reveal. */
+.life-map-glow--stable { box-shadow: 0 0 22px rgba(74,155,110,0.14); }
+.life-map-glow--improving { box-shadow: 0 0 22px rgba(201,162,39,0.16); }
+.life-map-glow--attention { box-shadow: 0 0 22px rgba(201,162,39,0.22); }
+.life-map-glow--blocked { box-shadow: 0 0 22px rgba(181,84,74,0.16); }
+.life-map-territory--selected.life-map-glow--stable { box-shadow: 0 0 0 1px rgba(201,162,39,0.3), 0 0 28px rgba(74,155,110,0.22); }
+.life-map-territory--selected.life-map-glow--blocked { box-shadow: 0 0 0 1px rgba(201,162,39,0.3), 0 0 28px rgba(181,84,74,0.24); }
+
+.life-map-subnode {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 8px 12px;
+  max-width: 150px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--panel-border);
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(6px);
+  animation: reveal-rise 0.4s ease both;
+}
+.life-map-subnode-kind {
+  font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-faint);
+}
+.life-map-subnode-label { font-size: 0.78rem; line-height: 1.3; }
+.life-map-subnode--move { border-color: var(--panel-border-strong); }
+.life-map-subnode--move .life-map-subnode-kind { color: var(--gold-light); }
+.life-map-subnode--barrier { border-color: rgba(181,84,74,0.35); }
+.life-map-subnode--barrier .life-map-subnode-kind { color: var(--danger); }
+.life-map-subnode--opportunity { border-color: rgba(74,155,110,0.35); }
+.life-map-subnode--opportunity .life-map-subnode-kind { color: var(--success); }
+
+.life-map-detail {
+  padding-top: 14px;
+  border-top: 1px solid var(--divider);
+}
+
+@media (max-width: 640px) {
+  .life-map-stage { padding-top: 105%; }
+  .life-map-territory { min-width: 84px; padding: 8px 10px; }
+  .life-map-territory-name { font-size: 0.74rem; }
+  .life-map-subnode { max-width: 108px; padding: 6px 8px; }
+  .life-map-subnode-label { font-size: 0.7rem; }
 }
 
 /* What's Waiting — active barriers, plus the ones that just dissolved.

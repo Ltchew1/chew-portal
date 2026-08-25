@@ -13,7 +13,7 @@ import GoldProgressRing from '../components/lab/GoldProgressRing';
 import RevealOnScroll from '../components/lab/RevealOnScroll';
 import ChewMoveCard from '../components/today/ChewMoveCard';
 import WhatsWaiting from '../components/today/WhatsWaiting';
-import LifeMapPreview from '../components/today/LifeMapPreview';
+import LifeMap from '../components/today/LifeMap';
 import OpportunityLadder from '../components/today/OpportunityLadder';
 import ComingToCommandCenter from '../components/today/ComingToCommandCenter';
 import { IconSparkles } from '../components/icons';
@@ -24,7 +24,7 @@ import { reconcileCreditIntelligence } from '../../lib/intelligenceCore';
 import { listRecentNotifications } from '../../lib/notifications';
 import {
   timeOfDayGreeting, canSeeRoomIntelligence, buildChangeSummary,
-  buildAccountLevelMove, buildLifeMapDomains, buildOpportunityLadder, buildRecentlyResolved,
+  buildAccountLevelMove, buildLifeMapGraph, buildOpportunityLadder, buildRecentlyResolved,
 } from '../../lib/todayIntelligence';
 
 const STATUS_LABELS = { applicant: 'Applicant', accepted: 'Accepted', paid: 'Paid' };
@@ -56,7 +56,7 @@ export default async function TodayPage() {
   // counts toward "locked" until it has one too.
   const dormantRoomCount = ROOMS.filter((room) => room.slug !== 'credit').length;
 
-  const lifeMapDomains = buildLifeMapDomains({ rooms: ROOMS, status, isRoomLive, creditIntel: creditRoomResult });
+  const lifeMapGraph = buildLifeMapGraph({ rooms: ROOMS, status, isRoomLive, creditIntel: creditRoomResult });
   const opportunityLadder = buildOpportunityLadder({ creditIntel: creditRoomResult, dormantRoomCount });
 
   return (
@@ -131,7 +131,7 @@ export default async function TodayPage() {
 
       <RevealOnScroll className="today-reveal">
         <span className="today-section-eyebrow">Your world</span>
-        <LifeMapPreview domains={lifeMapDomains} />
+        <LifeMap territories={lifeMapGraph} />
       </RevealOnScroll>
 
       <RevealOnScroll className="today-reveal">
