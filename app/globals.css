@@ -1333,6 +1333,34 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
   .life-map-not-mapped--mobile { position: static; padding: 8px 4px; }
 }
 
+/* What Changed Ripple — each change names the real section it affects
+   (lib/todayIntelligence.js's buildChangeRipples), and that section's
+   eyebrow (.ripple-glow, applied conditionally in page.js) pulses once
+   on load. Text-shadow only (no box/glow around a small inline span) so
+   it reads as "this label just lit up" without needing extra markup. */
+.ripple-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.ripple-item {
+  display: flex; flex-direction: column; gap: 6px;
+  font-size: 0.85rem;
+  opacity: 0;
+  animation: reveal-rise 0.4s ease both;
+}
+.ripple-affects { display: flex; flex-wrap: wrap; gap: 6px; }
+.ripple-affects-chip {
+  font-size: 0.66rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--gold-light);
+  background: rgba(201,162,39,0.08);
+  border: 1px solid var(--panel-border);
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+@keyframes ripple-glow-pulse {
+  0% { text-shadow: none; color: var(--text-faint); }
+  35% { text-shadow: 0 0 14px rgba(232,206,122,0.85); color: var(--gold-light); }
+  100% { text-shadow: none; color: var(--text-faint); }
+}
+.ripple-glow { animation: ripple-glow-pulse 1.6s ease-out 0.3s both; }
+
 /* What's Waiting — active barriers, plus the ones that just dissolved.
    The dissolved treatment is the directive's "if a constraint disappears,
    show that relationship": lower opacity, a strikethrough-style divider,

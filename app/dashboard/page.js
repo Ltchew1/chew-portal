@@ -12,6 +12,7 @@ import { currentUser } from '@clerk/nextjs/server';
 import GoldProgressRing from '../components/lab/GoldProgressRing';
 import RevealOnScroll from '../components/lab/RevealOnScroll';
 import ChewMoveCard from '../components/today/ChewMoveCard';
+import WhatChangedRipple from '../components/today/WhatChangedRipple';
 import WhatsWaiting from '../components/today/WhatsWaiting';
 import LifeMap from '../components/today/LifeMap';
 import OpportunityLadder from '../components/today/OpportunityLadder';
@@ -24,7 +25,7 @@ import { reconcileCreditIntelligence } from '../../lib/intelligenceCore';
 import { listRecentNotifications } from '../../lib/notifications';
 import {
   timeOfDayGreeting, canSeeRoomIntelligence, buildChangeSummary,
-  buildAccountLevelMove, buildLifeMapGraph, buildOpportunityLadder, buildRecentlyResolved, buildMoveSignals,
+  buildAccountLevelMove, buildLifeMapGraph, buildOpportunityLadder, buildRecentlyResolved, buildMoveSignals, buildChangeRipples,
 } from '../../lib/todayIntelligence';
 
 const STATUS_LABELS = { applicant: 'Applicant', accepted: 'Accepted', paid: 'Paid' };
@@ -66,6 +67,8 @@ export default async function TodayPage() {
       return { ...territory, icon: Icon ? <Icon /> : null };
     });
   const opportunityLadder = buildOpportunityLadder({ creditIntel: creditRoomResult, dormantRoomCount });
+  const ripple = buildChangeRipples(creditRoomResult?.whatChanged);
+  const rippleClass = (system) => (ripple.affected[system] ? ' ripple-glow' : '');
 
   return (
     <div className="today-bg">
@@ -102,14 +105,7 @@ export default async function TodayPage() {
         <RevealOnScroll className="today-reveal">
           <span className="today-section-eyebrow">What changed</span>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
-            {creditRoomResult.whatChanged.length > 0 && (
-              <div className="card">
-                <h3 style={{ marginBottom: '10px' }}>Since last time</h3>
-                <ul style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: '18px', fontSize: '0.85rem' }}>
-                  {creditRoomResult.whatChanged.map((c, i) => <li key={i}>{c.text}</li>)}
-                </ul>
-              </div>
-            )}
+            <WhatChangedRipple items={ripple.items} />
             {creditRoomResult.chewNoticed.length > 0 && (
               <div className="card">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
@@ -127,18 +123,18 @@ export default async function TodayPage() {
 
       {creditRoomResult && (creditRoomResult.activeBarriers?.length > 0 || recentlyResolved.length > 0) && (
         <RevealOnScroll className="today-reveal">
-          <span className="today-section-eyebrow">What&apos;s waiting</span>
+          <span className={`today-section-eyebrow${rippleClass('waiting')}`}>What&apos;s waiting</span>
           <WhatsWaiting barriers={creditRoomResult.activeBarriers} recentlyResolved={recentlyResolved} />
         </RevealOnScroll>
       )}
 
       <RevealOnScroll className="today-reveal">
-        <span className="today-section-eyebrow">What&apos;s opening</span>
+        <span className={`today-section-eyebrow${rippleClass('opportunity')}`}>What&apos;s opening</span>
         <OpportunityLadder ladder={opportunityLadder} />
       </RevealOnScroll>
 
       <RevealOnScroll className="today-reveal">
-        <span className="today-section-eyebrow">Your world</span>
+        <span className={`today-section-eyebrow${rippleClass('life_map')}`}>Your world</span>
         <LifeMap territories={lifeMapGraph} />
       </RevealOnScroll>
 
