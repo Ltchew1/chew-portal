@@ -23,10 +23,13 @@ import { currentUser } from '@clerk/nextjs/server';
 import GoldProgressRing from '../../components/lab/GoldProgressRing';
 import RevealOnScroll from '../../components/lab/RevealOnScroll';
 import TourExperience from '../../components/lab/tour/TourExperience';
+import AskChew from '../../components/lab/AskChew';
+import HomeIntelligence from '../../components/lab/HomeIntelligence';
 import { IconChevronRight, IconLock } from '../../components/icons';
 import { ROOMS } from '../../../lib/rooms';
 import { statusFromClerkUser, hasRequiredStatus } from '../../../lib/clientStatus';
 import { hasCompletedTour } from '../../../lib/tour';
+import { getHomeIntelligence } from '../../../lib/homeIntelligence';
 
 const STATUS_LABELS = { applicant: 'Applicant', accepted: 'Accepted', paid: 'Paid' };
 
@@ -94,6 +97,7 @@ export default async function LabHubPage({ searchParams }) {
   }
 
   const firstName = user.firstName || 'there';
+  const homeIntelligence = await getHomeIntelligence(user.id);
   // "Ready to enter" — built AND status-unlocked. Deliberately not just
   // status-unlocked: a Paid client clears every room's status threshold,
   // but only Credit actually has content, so counting status alone would
@@ -131,6 +135,15 @@ export default async function LabHubPage({ searchParams }) {
           </span>
         </div>
       </div>
+
+      {!justArrived && (
+        <div className="lab-intelligence-block">
+          <AskChew />
+          {homeIntelligence.rooms.map((roomIntel) => (
+            <HomeIntelligence key={roomIntel.room} intelligence={roomIntel} />
+          ))}
+        </div>
+      )}
 
       <div className="room-gallery">
         {ROOMS.map((room, index) => (

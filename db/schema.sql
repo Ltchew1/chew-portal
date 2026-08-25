@@ -187,3 +187,51 @@ ALTER TABLE dispute_tracker_entries ADD COLUMN IF NOT EXISTS recipient_name TEXT
 -- (not a table constraint) so it only applies where letter_id is set.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_dispute_tracker_letter_id
   ON dispute_tracker_entries(letter_id) WHERE letter_id IS NOT NULL;
+
+-- ============================================================================
+-- Shared intelligence foundations (CHEW: The Lab home — "Goal Graph" and
+-- "Score Path Engine"). Deliberately room-agnostic: `goals.room` is the only
+-- thing that scopes a row to Credit today, so a future room (Funding,
+-- Business, ...) can reuse the same table rather than growing its own copy.
+-- Same discipline as everything above: every value here is something the
+-- CLIENT told CHEW, not something CHEW pulled from a bureau, lender, or any
+-- third party. See lib/goals.js, lib/creditScore.js, lib/homeIntelligence.js.
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS goals (
+  id            BIGSERIAL PRIMARY KEY,
+  user_id       BIGINT NOT NULL REFERENCES users(id),
+  room          TEXT NOT NULL CHECK (room IN ('credit', 'credit-builder', 'business', 'funding', 'intelligence', 'money-systems')),
+  goal_type     TEXT NOT NULL, -- e.g. 'credit_score' — the only type in use today
+  target_value  TEXT NOT NULL, -- kept as text: a goal's shape varies by type (a score, a dollar amount, ...)
+  target_date   DATE,
+  status        TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'achieved', 'abandoned')),
+  notes         TEXT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_goals_user_id ON goals(user_id);
+
+-- One active goal per (user, room, goal_type) — setting a new target score
+-- replaces the old one rather than accumulating parallel "active" goals the
+-- UI would have to disambiguate.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_goals_active_unique
+  ON goals(user_id, room, goal_type) WHERE status = 'active';
+
+-- Client self-reported score readings — CHEW has no bureau connection and
+-- never will inside this compliance boundary (see the Credit room's
+-- no-transmission lock); this is the client telling CHEW what they saw on
+-- their own pulled report or a score-monitoring app, purely so the Score
+-- Path Engine has a "current position" to measure a goal against.
+CREATE TABLE IF NOT EXISTS credit_score_snapshots (
+  id             BIGSERIAL PRIMARY KEY,
+  user_id        BIGINT NOT NULL REFERENCES users(id),
+  bureau         TEXT CHECK (bureau IN ('equifax', 'experian', 'transunion', 'overall')),
+  score          SMALLINT NOT NULL CHECK (score BETWEEN 300 AND 900),
+  reported_date  DATE NOT NULL DEFAULT CURRENT_DATE,
+  source_note    TEXT, -- optional, client's own words (e.g. "from my bank's app")
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_credit_score_snapshots_user_id ON credit_score_snapshots(user_id);

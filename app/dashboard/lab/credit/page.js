@@ -11,20 +11,26 @@ import Link from 'next/link';
 import PageHeader from '../../../components/PageHeader';
 import StandingDisclosures from '../../../components/lab/credit/StandingDisclosures';
 import CreditRoomSubNav from '../../../components/lab/credit/CreditRoomSubNav';
+import ScoreGoal from '../../../components/lab/credit/ScoreGoal';
 import { IconBook, IconScale, IconMail, IconClipboard, IconChevronRight } from '../../../components/icons';
 import { listDisputeItemsForUser } from '../../../../lib/disputeItems';
 import { listLettersForUser } from '../../../../lib/letters';
 import { listTrackerEntriesForUser } from '../../../../lib/disputeTracker';
+import { getScoreGoal, listScoreSnapshots, pickLatestScore, computeScorePath } from '../../../../lib/creditScore';
 
 export default async function CreditRoomPage() {
   const user = await currentUser();
-  const [items, letters, trackerEntries] = await Promise.all([
+  const [items, letters, trackerEntries, goal, scoreSnapshots] = await Promise.all([
     listDisputeItemsForUser(user.id),
     listLettersForUser(user.id),
     listTrackerEntriesForUser(user.id),
+    getScoreGoal(user.id),
+    listScoreSnapshots(user.id),
   ]);
   const attestedCount = items.filter((i) => i.attested_at).length;
   const openTrackerCount = trackerEntries.filter((e) => e.status !== 'resolved').length;
+  const openItemCount = items.filter((i) => i.status === 'flagged' || i.status === 'attested').length;
+  const scorePath = computeScorePath({ goal, latestScore: pickLatestScore(scoreSnapshots), openItemCount });
 
   return (
     <>
@@ -93,6 +99,8 @@ export default async function CreditRoomPage() {
           </span>
         </Link>
       </div>
+
+      <ScoreGoal initialGoal={goal} initialSnapshots={scoreSnapshots} initialScorePath={scorePath} />
     </>
   );
 }

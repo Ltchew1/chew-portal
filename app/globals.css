@@ -334,6 +334,17 @@ a:hover { opacity: 0.8; }
 .badge-success { background: var(--success-bg); color: var(--success); border-color: rgba(74,155,110,0.3); }
 .badge-pending { background: var(--pending-bg); color: var(--gold-light); border-color: var(--panel-border-strong); }
 .badge-neutral { background: rgba(242,238,228,0.06); color: var(--text-faint); border-color: var(--divider); }
+.badge-danger { background: var(--danger-bg); color: var(--danger); border-color: rgba(181,84,74,0.3); }
+
+/* Next Best Move — the one card the home intelligence loop is built around
+   (see lib/homeIntelligence.js). A quiet gold hairline and a slightly
+   deeper surface mark it as "the" recommendation rather than one card among
+   many, without borrowing the hero's glow signature (reserved per the
+   constitution for the hub itself). */
+.next-move-card {
+  border: 1px solid var(--panel-border-strong);
+  background: linear-gradient(180deg, rgba(201,162,39,0.06), rgba(201,162,39,0) 60%), var(--black-elev);
+}
 
 /* ---------- Empty states ---------- */
 
@@ -613,6 +624,12 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
 }
 .lab-access-copy strong { display: block; color: var(--text); font-size: 0.98rem; margin-bottom: 4px; }
 .lab-access-copy span { color: var(--text-faint); font-size: 0.85rem; }
+
+/* CHEW: The Lab home intelligence — Ask CHEW + the current room's Plan
+   Status / Next Best Move / What Changed / CHEW Noticed, sitting between
+   the hero and the room gallery per the portal's "home experience"
+   hierarchy. Only shown to returning visitors (see app/dashboard/lab/page.js). */
+.lab-intelligence-block { margin-bottom: 36px; }
 
 .room-gallery {
   display: grid;

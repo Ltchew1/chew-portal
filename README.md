@@ -314,6 +314,130 @@ Run both checks together with `npm run compliance:check`.
 - Education library is not built yet. `CreditRoomSubNav` shows it as
   "coming soon."
 
+## Shared intelligence foundations (the "Living Economic Intelligence" layer)
+
+CHEW's product direction is to become more than a room-by-room portal — an
+intelligence layer that watches a client's own data, tells them what
+changed, and names one dominant next action, room by room, without ever
+fabricating certainty it doesn't have. This is the first phase of that
+layer: the reusable primitives, proven end-to-end on the one room that has
+real client data (Credit), built so a second room can plug into the same
+engine rather than growing its own copy.
+
+**Everything below follows the same rule as the rest of this app: CHEW has
+no bureau connection, no lender connection, and no third-party data feed of
+any kind. Every input is either something the client already did inside
+the portal (flagged an item, generated a letter, logged a tracker update)
+or something the client typed in directly (a score they saw, a target they
+want). Nothing is pulled, scraped, or inferred from outside.**
+
+### Goal Graph (`goals` table, `lib/goals.js`)
+
+A deliberately room-agnostic table: `room` + `goal_type` + `target_value`,
+one active goal per (user, room, goal_type) — setting a new target is an
+upsert (`ON CONFLICT ... WHERE status = 'active'`), never a second parallel
+goal to reconcile. Only Credit populates it today
+(`goal_type = 'credit_score'`), but the shape is generic on purpose — a
+funding revenue target or a business-readiness milestone can reuse this
+exact table later instead of a bespoke one.
+
+### Score Path Engine (`credit_score_snapshots` table, `lib/creditScore.js`)
+
+The client logs a score they've actually seen (their own report, a bank
+app, wherever — `bureau` is optional) and sets a target via the same Goal
+Graph. `computeScorePath()` is a **pure function** — given a goal and a
+snapshot, it returns exact numbers only: `target`, `current`, `gap`
+(subtraction, never estimated), and three explicitly-labeled factor lists —
+**controllable** (what the client can actually act on, including a real
+count of their own open dispute items), **time-dependent** (ages on a fixed
+clock, not something CHEW can accelerate), and **unknown** (what CHEW
+plainly can't see). There is no fabricated "N days to your target" —
+`reassessmentTrigger` is event-based ("the next time you log an updated
+score"), because CHEW has no way to know when a bureau will actually act.
+This directly follows the "Precision Doctrine, never fake precision" rule:
+exact where the math is exact, honestly qualitative everywhere else. Lives
+on the Credit room overview page (`ScoreGoal.js`) — set a target, log a
+score, see the gap, expand "what's behind this gap" for the full factor
+breakdown.
+
+### The Next-Best-Move / Plan-Status / CHEW-Noticed engine (`lib/homeIntelligence.js`)
+
+The shared "signals" primitive: `buildCreditIntelligence()` is a **pure
+function** over data the caller already fetched (dispute items, letters,
+tracker entries, mailing address, goal, score snapshots) — no DB access
+inside it, directly unit-testable, same pattern as `lib/letterContent.js`.
+`getCreditIntelligence()` is the thin loader that fetches and calls it;
+`getHomeIntelligence()` is the home page's entry point and is written to
+merge a second room's `getXIntelligence()` into the same result once one
+exists. From real data alone (no fabrication for rooms/data that don't
+exist yet) it derives:
+
+- **Plan status** — On Track / Watch / Action Needed / Plan at Risk, one
+  value, ranked by real severity (a letter mailed >30 days ago with no
+  logged response — FCRA §611's window — outranks an unattested item, which
+  outranks an untracked letter, etc.)
+- **The one dominant Next Best Move** — `{ action, why, effect, supports,
+  avoid, next, href }`, always exactly one, chosen by the same priority
+  order as plan status
+- **"CHEW Noticed"** — secondary, non-obvious observations (multiple
+  flagged items with the same bureau, more than one stalled letter, a
+  logged score that already clears the target)
+- **"What Changed"** — a rolling 14-day activity feed built from timestamps
+  the app already stores (flagged/generated/logged events), not a new
+  tracked "last visited" cursor
+- **Opportunities** — deliberately modest for Credit today (e.g. "a
+  resolved item may already be reflected in a fresh report") — the
+  directive's Opportunity Radar is not extended into rooms with no real
+  data behind them yet; see "Deferred" below
+
+Verified by executing the pure function directly against 12 constructed
+scenarios (not just reading the code) — every plan-status branch, the
+30-day stall detection, multi-item grouping, and the score-gap math all
+produced correct output, including the exact day-offset date math.
+
+### Ask CHEW (`lib/askChew.js`, `AskChew.js`, `/api/home/ask`)
+
+A **deterministic keyword router**, not a chatbot and not an LLM call — the
+same reasoning as the letter generator's phrase banks: an answer engine's
+output space isn't fully known in advance, so it can't be held to this
+app's compliance-auditability bar. Ask CHEW matches free text ("I don't
+recognize an account," "I want a 750") to the right page in the portal and
+says so plainly. A genuine miss is shown as a miss, with a manual way
+forward — never a vague non-answer dressed up as understanding. Asking
+about a real thing in an unbuilt room (e.g. "I want to buy a laundromat")
+correctly names the room and says it isn't open yet, rather than a dead
+link pretending to work.
+
+### Home experience (`/dashboard/lab`)
+
+For a returning (post-tour) visitor, the hub now opens with Ask CHEW and
+the current room-intelligence block (Plan Status, Next Best Move, What
+Changed, CHEW Noticed, Opportunities) above the existing room gallery —
+matching the directive's home hierarchy while leaving the tour and gallery
+themselves untouched. A first-time visitor still sees the cinematic tour
+exactly as before.
+
+### Deferred from the master intelligence directive
+
+The directive describes a much larger system — Interference Scan +
+Recovery Mode, a full Decision Lab, Counterfactual/Pre-Mortem engines, a
+War Room, "Secret Weapon," Evidence Vault, a personal economic Digital
+Twin, push/email notification delivery, and Opportunity/Blind-Spot radar
+across every room. None of that is faked here. What's built is the load-
+bearing foundation those systems would sit on — Goal Graph, a real signals
+engine, and a real (if narrow) Next-Best-Move — proven correct on the one
+room with real data, in a shape a second room can extend without
+duplicating logic. Extending to a second room (Credit Builder is the
+natural next candidate — it already has a real build sequence in
+`lib/rooms.js`'s feature list) needs that room's own data model built
+first; Decision Lab and Digital Twin need a broader financial-profile data
+model (income, debts, assets) that doesn't exist yet and deserves its own
+scoping pass, since giving confident directives on investment/property/
+business decisions is a materially different scope than the Credit room's
+FCRA-bounded dispute education. Recovery Mode and Interference Scan are
+partially present in spirit (Plan at Risk + "why + what to do" framing) but
+not built as their own named system yet.
+
 ## What's real right now
 
 - Sign up / sign in / sign out — fully working, real Clerk accounts
@@ -324,14 +448,16 @@ Run both checks together with `npm run compliance:check`.
 - CHEW: The Lab — glass-and-gold room picker hub (`/dashboard/lab`) with
   seven rooms; Credit is fully real (guardrail framework, Report
   Walkthrough, Self-Flagging Tool, the full Letters generator across all
-  four escalation stages, and the Dispute Tracker — all backed by
-  Postgres). The other six
-  rooms are honest "coming to your Lab" placeholders with specific,
-  real feature teasers. The first-visit guided tour is real and persisted
-  (see above), and correctly distinguishes "just finished the tour" from a
-  true return visit. There's no goal-setting feature yet, so the hub shows
-  real, computed room-access progress (rooms ready to enter) rather than a
-  fabricated "goal."
+  four escalation stages, the Dispute Tracker, and the Score Path Engine —
+  all backed by Postgres). The other six rooms are honest "coming to your
+  Lab" placeholders with specific, real feature teasers. The first-visit
+  guided tour is real and persisted (see above), and correctly
+  distinguishes "just finished the tour" from a true return visit. A
+  returning visitor's hub now opens with Ask CHEW and a real, computed
+  Plan Status / Next Best Move / What Changed / CHEW Noticed block driven
+  by the client's own Credit room activity (see "Shared intelligence
+  foundations" above) — the room-access ring below it is still real,
+  computed progress, not a fabricated "goal."
 - Brand styling — matches joinchew.com's colors and fonts already
 
 ## What's next (not built yet, on purpose)
