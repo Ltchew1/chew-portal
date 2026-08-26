@@ -27,7 +27,7 @@ import { buildTransitionEvents } from '../../lib/transitions';
 import {
   timeOfDayGreeting, canSeeRoomIntelligence, buildChangeSummary,
   buildAccountLevelMove, buildLifeMapGraph, buildOpportunityRadar, buildMoveSignals,
-  buildChangeRipples, buildDominoCascade,
+  buildChangeRipples, buildDominoCascade, buildCrossSystemDomino,
 } from '../../lib/todayIntelligence';
 
 const STATUS_LABELS = { applicant: 'Applicant', accepted: 'Accepted', paid: 'Paid' };
@@ -45,6 +45,7 @@ export default async function TodayPage() {
   const canSeeCredit = canSeeRoomIntelligence(status, creditRoom) && isRoomLive('credit');
   const creditRoomResult = canSeeCredit ? await reconcileCreditIntelligence(user.id) : null;
   const dissolveEvents = buildTransitionEvents(creditRoomResult);
+  const crossSystemDomino = buildCrossSystemDomino(creditRoomResult);
 
   const { changedCount, attentionCount } = creditRoomResult
     ? buildChangeSummary([creditRoomResult])
@@ -71,7 +72,7 @@ export default async function TodayPage() {
     });
   const opportunityRadar = buildOpportunityRadar({ creditIntel: creditRoomResult, dormantRooms });
   const ripple = buildChangeRipples(creditRoomResult?.whatChanged);
-  const affected = { ...ripple.affected, ...domino.affected };
+  const affected = { ...ripple.affected, ...domino.affected, ...crossSystemDomino.affected };
   const rippleClass = (system) => (affected[system] ? ' ripple-glow' : '');
 
   return (
@@ -107,7 +108,7 @@ export default async function TodayPage() {
 
       {dissolveEvents.length > 0 && (
         <RevealOnScroll className="today-reveal">
-          <BarrierDissolve events={dissolveEvents} />
+          <BarrierDissolve events={dissolveEvents} crossSystemDomino={crossSystemDomino} />
         </RevealOnScroll>
       )}
 

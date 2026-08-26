@@ -1527,6 +1527,32 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
 }
 .dissolve-result { font-size: 0.85rem; color: var(--text-faint); margin: 0 0 8px; }
 
+/* Domino effect — real co-occurring transitions this same barrier
+   clear's reconciliation pass also detected (lib/todayIntelligence.js's
+   buildCrossSystemDomino). Same chip/chevron language as THE CHEW
+   MOVE's impact chain, timed to arrive after the dissolve settles
+   (~1.6s) rather than competing with it. */
+.dissolve-domino { margin: 4px 0 10px; }
+.dissolve-domino-label {
+  display: block;
+  font-size: 0.66rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-faintest);
+  margin-bottom: 6px;
+}
+.dissolve-domino-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.dissolve-domino-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 0.78rem; font-weight: 600;
+  color: var(--gold-light);
+  background: rgba(201,162,39,0.1);
+  border: 1px solid var(--panel-border);
+  padding: 5px 12px;
+  border-radius: 14px;
+  opacity: 0;
+  animation: impact-step-in 0.45s ease both;
+}
+.dissolve-domino-arrow { color: var(--text-faintest); flex-shrink: 0; }
+
 .dissolve-toggle {
   background: none; border: none; padding: 0;
   color: var(--text-faint);
