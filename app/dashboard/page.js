@@ -18,12 +18,14 @@ import WhatsWaiting from '../components/today/WhatsWaiting';
 import LifeMap from '../components/today/LifeMap';
 import OpportunityRadar from '../components/today/OpportunityRadar';
 import ComingToCommandCenter from '../components/today/ComingToCommandCenter';
+import ProgressWorldReaction from '../components/today/ProgressWorldReaction';
 import { IconSparkles } from '../components/icons';
 import { ROOMS } from '../../lib/rooms';
 import { statusFromClerkUser, hasRequiredStatus } from '../../lib/clientStatus';
 import { listFeatures, evaluateFeatureAccess, roomFeatureKey } from '../../lib/features';
 import { reconcileCreditIntelligence } from '../../lib/intelligenceCore';
 import { buildTransitionEvents } from '../../lib/transitions';
+import { computeMomentLevel } from '../../lib/portalReactions';
 import {
   timeOfDayGreeting, canSeeRoomIntelligence, buildChangeSummary,
   buildAccountLevelMove, buildLifeMapGraph, buildOpportunityRadar, buildMoveSignals,
@@ -46,6 +48,7 @@ export default async function TodayPage() {
   const creditRoomResult = canSeeCredit ? await reconcileCreditIntelligence(user.id) : null;
   const dissolveEvents = buildTransitionEvents(creditRoomResult);
   const crossSystemDomino = buildCrossSystemDomino(creditRoomResult);
+  const momentLevel = computeMomentLevel(creditRoomResult);
 
   const { changedCount, attentionCount } = creditRoomResult
     ? buildChangeSummary([creditRoomResult])
@@ -78,6 +81,7 @@ export default async function TodayPage() {
 
   return (
     <div className="today-bg">
+      <ProgressWorldReaction level={momentLevel} />
       <span className="today-eyebrow">Today</span>
       <h1 className="today-greeting">{timeOfDayGreeting()} {firstName}.</h1>
       {creditRoomResult ? (
@@ -86,6 +90,11 @@ export default async function TodayPage() {
             ? 'Nothing new since last time.'
             : `${changedCount} thing${changedCount === 1 ? '' : 's'} changed.`}
           {attentionCount > 0 && ` ${attentionCount} deserve${attentionCount === 1 ? 's' : ''} your attention today.`}
+          {/* Real text equivalent of ProgressWorldReaction's ambient
+              pass — present regardless of motion preference, so the
+              level's meaning never depends on the animation rendering. */}
+          {momentLevel === 'major' && ' Major shift today.'}
+          {momentLevel === 'landmark' && ' Landmark day.'}
         </p>
       ) : (
         <p className="today-summary text-faint">

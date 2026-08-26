@@ -1434,6 +1434,36 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
   .life-map-not-mapped--mobile { position: static; padding: 8px 4px; }
 }
 
+/* Progress World Reaction — the environment itself responding to a real
+   state change (lib/portalReactions.js's computeMomentLevel). Purely
+   atmospheric: a broad, low-opacity gold pass across the hero area,
+   one-shot, ending fully transparent and inert (no cleanup needed — a
+   finished CSS animation just sits at its final computed style). Higher
+   specificity than `.today-bg > *` (which would otherwise force this
+   into position:relative/z-index:1 like every other real child) so it
+   stays a full-bleed backdrop layer, not an in-flow element that would
+   push the greeting down. */
+.today-bg .world-reaction {
+  position: absolute;
+  inset: -60px -60px -20%;
+  z-index: 0;
+  pointer-events: none;
+}
+@keyframes world-reaction-major {
+  0% { opacity: 0; background: radial-gradient(ellipse 60% 50% at 50% 10%, rgba(201,162,39,0.22) 0%, transparent 70%); }
+  35% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.world-reaction--major { animation: world-reaction-major 2s ease-out both; }
+@keyframes world-reaction-landmark {
+  0% { opacity: 0; background: radial-gradient(ellipse 75% 60% at 50% 10%, rgba(201,162,39,0.32) 0%, transparent 72%); }
+  30% { opacity: 1; }
+  55% { opacity: 0.4; }
+  75% { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+.world-reaction--landmark { animation: world-reaction-landmark 2.6s ease-out both; }
+
 /* What Changed as an intelligence summary — one real headline instead
    of a flat feed (lib/todayIntelligence.js's buildChangeStory). Quieter
    than THE CHEW MOVE (this is a summary of the past, not an instruction)
