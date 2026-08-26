@@ -1890,6 +1890,42 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
 }
 .today-reveal.revealed { opacity: 1; transform: translateY(0); }
 
+/* CROSS-SYSTEM FOCUS MODE (app/components/today/FocusController.js) —
+   selecting a real insight (THE CHEW MOVE's "Why this move?", a Barrier
+   Dissolve card's "Why this opened?", a Life Map territory) softens
+   every OTHER real section on Today and keeps only the ones it's really
+   connected to at full strength. `data-chew-focus-target` marks which
+   sections participate (page.js); `.chew-focus-highlight` is added by
+   the controller only to the ones matching the real affected-systems
+   map a caller passed into focusBus.js's setFocus — never a fabricated
+   connection. Higher specificity than `.today-reveal.revealed` (see
+   above) so this can dim a section that has already scrolled into
+   view, and opacity-only (never `visibility`/`display`) so every
+   section stays fully present for screen readers regardless of the
+   visual state — nothing here is glow-only. */
+.today-bg.chew-focus-active [data-chew-focus-target] {
+  opacity: 0.4;
+  filter: saturate(0.65);
+  transition: opacity 0.35s ease, filter 0.35s ease;
+}
+.today-bg.chew-focus-active [data-chew-focus-target].chew-focus-highlight {
+  opacity: 1;
+  filter: none;
+}
+
+/* Standard visually-hidden pattern — used by FocusController's aria-live
+   announcement, which restates in plain text what the highlight/dim
+   contrast conveys visually. */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ---------- Misc ---------- */
 
 .text-faint { color: var(--text-faint); }

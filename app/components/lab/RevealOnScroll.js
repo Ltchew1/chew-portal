@@ -14,7 +14,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
-export default function RevealOnScroll({ children, delay = 0, className = '', as = 'div', href }) {
+export default function RevealOnScroll({ children, delay = 0, className = '', as = 'div', href, ...rest }) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
 
@@ -40,14 +40,14 @@ export default function RevealOnScroll({ children, delay = 0, className = '', as
 
   if (as === 'link' && href) {
     return (
-      <Link href={href} ref={ref} className={combinedClassName} style={style}>
+      <Link href={href} ref={ref} className={combinedClassName} style={style} {...rest}>
         {children}
       </Link>
     );
   }
 
   return (
-    <div ref={ref} className={combinedClassName} style={style}>
+    <div ref={ref} className={combinedClassName} style={style} {...rest}>
       {children}
     </div>
   );

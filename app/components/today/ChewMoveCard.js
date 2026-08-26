@@ -33,6 +33,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { IconSparkles, IconChevronRight } from '../icons';
+import { setFocus, clearFocus } from './focusBus';
 
 const IMPACT_LABELS = {
   constraintsRemoved: (n) => `${n} constraint${n === 1 ? '' : 's'} removed`,
@@ -142,6 +143,22 @@ export default function ChewMoveCard({
   const resolveDelay = handoffDelay ? 1.6 : (isolated ? 1.35 : 0.5);
   const levelClass = changed && level ? ` chew-move-card--level-${level}` : '';
 
+  // Cross-System Focus Mode — real leverage only: the move's own proven
+  // impact (domino.affected) plus, when this pass's change co-occurred
+  // with something else, the same crossSystemDomino.affected map
+  // ConnectsTo already renders as text. Never independently re-detected.
+  const focusSystems = { ...domino.affected, ...(changed && connects?.active ? connects.affected : {}) };
+  const hasFocusTargets = Object.keys(focusSystems).length > 0;
+
+  function toggleReasoning() {
+    setOpen((wasOpen) => {
+      const willOpen = !wasOpen;
+      if (willOpen && hasFocusTargets) setFocus('chewMove', focusSystems);
+      else clearFocus('chewMove');
+      return willOpen;
+    });
+  }
+
   return (
     <div
       className={`chew-move-card${isolated ? ' chew-move-card--isolated' : ''}${changed ? ' chew-move-card--changed' : ''}${levelClass}`}
@@ -171,7 +188,7 @@ export default function ChewMoveCard({
       <button
         type="button"
         className="chew-move-toggle"
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggleReasoning}
         aria-expanded={open}
       >
         Why this move? <IconChevronRight style={{ transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s ease' }} />

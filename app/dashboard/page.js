@@ -20,6 +20,7 @@ import OpportunityRadar from '../components/today/OpportunityRadar';
 import ComingToCommandCenter from '../components/today/ComingToCommandCenter';
 import ProgressWorldReaction from '../components/today/ProgressWorldReaction';
 import SessionChoreography from '../components/today/SessionChoreography';
+import FocusController from '../components/today/FocusController';
 import { IconSparkles } from '../components/icons';
 import { ROOMS } from '../../lib/rooms';
 import { statusFromClerkUser, hasRequiredStatus } from '../../lib/clientStatus';
@@ -29,7 +30,7 @@ import { buildPortalReactions, reactionsFor } from '../../lib/portalReactions';
 import {
   timeOfDayGreeting, canSeeRoomIntelligence, buildChangeSummary,
   buildAccountLevelMove, buildLifeMapGraph, buildOpportunityRadar, buildMoveSignals,
-  buildChangeRipples, buildDominoCascade, buildChangeStory, pickTopChangeText,
+  buildChangeRipples, buildDominoCascade, buildChangeStory, pickTopChangeText, SYSTEM_LABEL,
 } from '../../lib/todayIntelligence';
 
 const STATUS_LABELS = { applicant: 'Applicant', accepted: 'Accepted', paid: 'Paid' };
@@ -126,6 +127,7 @@ export default async function TodayPage() {
         eventKey={choreographyKey}
       />
       <ProgressWorldReaction level={momentLevel} />
+      <FocusController systemLabels={SYSTEM_LABEL} />
       <span className="today-eyebrow">Today</span>
       <h1 className="today-greeting">{timeOfDayGreeting()} {firstName}.</h1>
       {creditRoomResult ? (
@@ -199,18 +201,18 @@ export default async function TodayPage() {
       )}
 
       {creditRoomResult && creditRoomResult.activeBarriers?.length > 0 && (
-        <RevealOnScroll className="today-reveal">
+        <RevealOnScroll className="today-reveal" data-chew-focus-target data-chew-system="waiting">
           <span className={`today-section-eyebrow${rippleClass('waiting')}`}>What&apos;s waiting</span>
           <WhatsWaiting barriers={creditRoomResult.activeBarriers} />
         </RevealOnScroll>
       )}
 
-      <RevealOnScroll className="today-reveal">
+      <RevealOnScroll className="today-reveal" data-chew-focus-target data-chew-system="opportunity">
         <span className={`today-section-eyebrow${rippleClass('opportunity')}`}>What&apos;s opening</span>
         <OpportunityRadar radar={opportunityRadar} />
       </RevealOnScroll>
 
-      <RevealOnScroll className="today-reveal">
+      <RevealOnScroll className="today-reveal" data-chew-focus-target data-chew-system="life_map">
         <span className={`today-section-eyebrow${rippleClass('life_map')}`}>Your world</span>
         <LifeMap territories={lifeMapGraph} />
       </RevealOnScroll>

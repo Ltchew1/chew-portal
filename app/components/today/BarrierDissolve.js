@@ -32,13 +32,30 @@
 
 import { useState } from 'react';
 import { IconChevronRight } from '../icons';
+import { setFocus, clearFocus } from './focusBus';
 
 const OUTCOME_LABEL = { barrier_cleared: 'BARRIER CLEARED', opportunity_unlocked: 'OPPORTUNITY UNLOCKED' };
+const OWN_SYSTEM = { barrier_cleared: 'waiting', opportunity_unlocked: 'opportunity' };
 
 function DissolveCard({ event, crossSystemDomino }) {
   const [open, setOpen] = useState(false);
   const isBarrier = event.eventType === 'barrier_cleared';
   const showDomino = isBarrier && crossSystemDomino?.active;
+
+  // Cross-System Focus Mode — the system this event itself lives on,
+  // plus (only for the barrier that actually triggered it) the same
+  // crossSystemDomino.affected map the "Domino effect" chips above
+  // already render as text. Never independently re-detected.
+  const focusSystems = { [OWN_SYSTEM[event.eventType]]: true, ...(showDomino ? crossSystemDomino.affected : {}) };
+
+  function toggleWhy() {
+    setOpen((wasOpen) => {
+      const willOpen = !wasOpen;
+      if (willOpen) setFocus(event.id, focusSystems);
+      else clearFocus(event.id);
+      return willOpen;
+    });
+  }
 
   return (
     <div className="dissolve-card">
@@ -68,7 +85,7 @@ function DissolveCard({ event, crossSystemDomino }) {
         </div>
       )}
 
-      <button type="button" className="dissolve-toggle" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+      <button type="button" className="dissolve-toggle" onClick={toggleWhy} aria-expanded={open}>
         Why this opened
       </button>
       {open && (

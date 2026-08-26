@@ -28,6 +28,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { IconChevronRight } from '../icons';
+import { setFocus, clearFocus } from './focusBus';
 
 const STATE_BADGE = {
   stable: 'badge-success', improving: 'badge-pending', needs_attention: 'badge-pending',
@@ -241,6 +242,22 @@ export default function LifeMap({ territories }) {
   const selectedTerritory = positions.find((t) => t.slug === selected);
   const anchor = { x: 50, y: 88 };
 
+  // Cross-System Focus Mode — a territory's own real barrier/opportunity
+  // counts (its subNodes, already computed for the chain diagram above)
+  // are the only "connects to" signal here; never a new detection. A
+  // dormant/not-yet-mapped territory has nothing to connect, so
+  // selecting one clears focus instead of highlighting anything.
+  function selectTerritory(t) {
+    setSelected(t.slug);
+    if (hasChain(t)) {
+      const barrierCount = (t.subNodes.barriers?.length ?? 0) + (t.subNodes.dissolvingBarriers?.length ?? 0);
+      const opportunityCount = t.subNodes.opportunities?.length ?? 0;
+      setFocus('lifeMap', { life_map: true, waiting: barrierCount > 0, opportunity: opportunityCount > 0 });
+    } else {
+      clearFocus('lifeMap');
+    }
+  }
+
   return (
     <div className="card">
       <h3 style={{ marginBottom: '4px' }}>Your Life Map</h3>
@@ -277,7 +294,7 @@ export default function LifeMap({ territories }) {
               !hasChain(t) ? 'life-map-territory--dormant' : '',
             ].filter(Boolean).join(' ')}
             style={{ left: `${t.pos.x}%`, top: `${t.pos.y}%` }}
-            onClick={() => setSelected(t.slug)}
+            onClick={() => selectTerritory(t)}
             aria-pressed={t.slug === selected}
           >
             {t.icon && <span className="life-map-territory-icon">{t.icon}</span>}
@@ -307,7 +324,7 @@ export default function LifeMap({ territories }) {
                 t.slug === selected ? 'life-map-mobile-chip--selected' : '',
                 STATE_GLOW[t.state] ?? '',
               ].filter(Boolean).join(' ')}
-              onClick={() => setSelected(t.slug)}
+              onClick={() => selectTerritory(t)}
             >
               {t.icon && <span className="life-map-territory-icon">{t.icon}</span>}
               <span className="life-map-territory-name">{t.name}</span>
