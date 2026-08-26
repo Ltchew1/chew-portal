@@ -16,7 +16,7 @@ import BarrierDissolve from '../components/today/BarrierDissolve';
 import WhatChangedRipple from '../components/today/WhatChangedRipple';
 import WhatsWaiting from '../components/today/WhatsWaiting';
 import LifeMap from '../components/today/LifeMap';
-import OpportunityLadder from '../components/today/OpportunityLadder';
+import OpportunityRadar from '../components/today/OpportunityRadar';
 import ComingToCommandCenter from '../components/today/ComingToCommandCenter';
 import { IconSparkles } from '../components/icons';
 import { ROOMS } from '../../lib/rooms';
@@ -26,7 +26,7 @@ import { reconcileCreditIntelligence } from '../../lib/intelligenceCore';
 import { buildTransitionEvents } from '../../lib/transitions';
 import {
   timeOfDayGreeting, canSeeRoomIntelligence, buildChangeSummary,
-  buildAccountLevelMove, buildLifeMapGraph, buildOpportunityLadder, buildMoveSignals,
+  buildAccountLevelMove, buildLifeMapGraph, buildOpportunityRadar, buildMoveSignals,
   buildChangeRipples, buildDominoCascade,
 } from '../../lib/todayIntelligence';
 
@@ -57,9 +57,9 @@ export default async function TodayPage() {
 
   const readyCount = ROOMS.filter((room) => isRoomLive(room.slug) && hasRequiredStatus(status, room.requiredStatus)).length;
   // Only Credit has a real opportunity-detection pipeline today (see
-  // lib/homeIntelligence.js) — every other room, live or not, honestly
-  // counts toward "locked" until it has one too.
-  const dormantRoomCount = ROOMS.filter((room) => room.slug !== 'credit').length;
+  // lib/homeIntelligence.js) — every other room, live or not, is a real,
+  // named dormant zone on the Radar until it has one too.
+  const dormantRooms = ROOMS.filter((room) => room.slug !== 'credit');
 
   // Icons are rendered here (server side, same as every other room icon in
   // the app) and passed down as elements — LifeMap (a client component)
@@ -69,7 +69,7 @@ export default async function TodayPage() {
       const Icon = ROOMS.find((r) => r.slug === territory.slug)?.icon;
       return { ...territory, icon: Icon ? <Icon /> : null };
     });
-  const opportunityLadder = buildOpportunityLadder({ creditIntel: creditRoomResult, dormantRoomCount });
+  const opportunityRadar = buildOpportunityRadar({ creditIntel: creditRoomResult, dormantRooms });
   const ripple = buildChangeRipples(creditRoomResult?.whatChanged);
   const affected = { ...ripple.affected, ...domino.affected };
   const rippleClass = (system) => (affected[system] ? ' ripple-glow' : '');
@@ -140,7 +140,7 @@ export default async function TodayPage() {
 
       <RevealOnScroll className="today-reveal">
         <span className={`today-section-eyebrow${rippleClass('opportunity')}`}>What&apos;s opening</span>
-        <OpportunityLadder ladder={opportunityLadder} />
+        <OpportunityRadar radar={opportunityRadar} />
       </RevealOnScroll>
 
       <RevealOnScroll className="today-reveal">

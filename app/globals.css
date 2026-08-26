@@ -1582,37 +1582,100 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
   margin-bottom: 8px;
 }
 
-/* Opportunity Ladder — layered, not a flat list. The locked tier is
-   visually quieter (dashed divider, no items) so absence still reads as
-   information, per the directive's empty-state standard. */
-.opportunity-tier { margin-bottom: 16px; }
-.opportunity-tier:last-child { margin-bottom: 0; }
-.opportunity-tier-label {
-  display: block;
-  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+/* Opportunity Radar — real opportunities arranged around "Now," reusing
+   Life Map's exact anchor/arc geometry and .life-map-anchor* classes so
+   the two surfaces read as one spatial language, not two inventions.
+   Dormant zones are real, named rooms (never a fabricated "blocked
+   opportunity" count) — quieter and farther out, same "fogged, not
+   dead" treatment Life Map uses for its own unmapped territories. */
+.radar-stage--desktop {
+  position: relative;
+  width: 100%;
+  padding-top: 62%;
+  margin-bottom: 12px;
+}
+.radar-stage--mobile { display: none; }
+.radar-edges { position: absolute; inset: 0; width: 100%; height: 100%; }
+.radar-edge { stroke: var(--divider); stroke-width: 0.3; }
+.radar-edge--unlocked { stroke: rgba(74,155,110,0.5); stroke-width: 0.45; }
+
+.radar-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 8px 12px;
+  max-width: 130px;
+  text-align: center;
+  border-radius: var(--radius);
+  border: 1px solid var(--panel-border);
+  background: linear-gradient(165deg, var(--black-elev) 0%, var(--black-soft) 100%);
+  animation: reveal-rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.radar-node-label { font-size: 0.8rem; font-weight: 600; line-height: 1.25; }
+.radar-node-sub { font-size: 0.66rem; color: var(--text-faintest); }
+.radar-node-link { font-size: 0.74rem; font-weight: 600; }
+.radar-node--active { border-color: rgba(74,155,110,0.4); box-shadow: 0 0 14px rgba(74,155,110,0.14); }
+/* A separate entrance animation, not just an `opacity` override — the
+   base .radar-node's reveal-rise animation computes its own opacity:1
+   on completion (animated properties win over the cascade), so a plain
+   `.radar-node--dormant { opacity: 0.55 }` rule would be silently
+   clobbered the moment the entrance animation finishes. Found by
+   inspecting the actual computed style after the animation settled,
+   not by reading the CSS. */
+@keyframes reveal-rise-dim {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 0.55; transform: translateY(0); }
+}
+.radar-node--dormant {
+  animation: reveal-rise-dim 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  filter: grayscale(0.4) blur(0.3px);
+  border-style: dashed;
+}
+.radar-node--unlocked {
+  border-color: var(--success);
+  box-shadow: 0 0 20px rgba(74,155,110,0.22);
+  animation: life-map-node-emerge 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.radar-node-badge {
+  font-size: 0.6rem; font-weight: 700; letter-spacing: 0.05em;
+  color: var(--success);
+}
+.radar-empty {
+  position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%);
+  max-width: 60%;
+  text-align: center;
+  font-size: 0.85rem;
   color: var(--text-faint);
-  margin-bottom: 8px;
 }
-.opportunity-item { padding: 8px 0; }
-.opportunity-item + .opportunity-item { border-top: 1px solid var(--divider); }
-/* "Just opened" — one-shot rise, real opportunity_unlocked transitions
-   only (see lib/transitions.js). Not a loop: renders once, on the exact
-   pass CHEW detected the opportunity became active. */
-@keyframes opportunity-rise {
-  0% { opacity: 0; transform: translateY(14px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-.opportunity-item--rising {
-  animation: opportunity-rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(74,155,110,0.35);
-  box-shadow: 0 0 16px rgba(74,155,110,0.14);
-}
-.opportunity-item--rising + .opportunity-item--rising { margin-top: 8px; border-top: none; }
-.opportunity-tier--locked {
-  padding-top: 12px;
-  border-top: 1px dashed var(--divider);
+
+/* Mobile — plain stacked cards, no spatial layout at all: this
+   component has no interactivity either way, so there's nothing a
+   shrunk diagram would preserve that a stack doesn't already show. */
+@media (max-width: 640px) {
+  .radar-stage--desktop { display: none; }
+  .radar-stage--mobile { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+  .radar-mobile-card {
+    padding: 12px 14px;
+    border-radius: var(--radius);
+    border: 1px solid var(--panel-border);
+    background: linear-gradient(165deg, var(--black-elev) 0%, var(--black-soft) 100%);
+    animation: reveal-rise 0.4s ease both;
+  }
+  .radar-mobile-card strong { display: block; font-size: 0.88rem; margin-top: 2px; }
+  .radar-mobile-card--active { border-color: rgba(74,155,110,0.4); }
+  .radar-mobile-card--unlocked {
+    border-color: var(--success);
+    box-shadow: 0 0 16px rgba(74,155,110,0.18);
+    animation: life-map-node-emerge-mobile 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .radar-mobile-dormant-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .radar-mobile-dormant-chip {
+    font-size: 0.72rem;
+    padding: 4px 10px;
+    border-radius: 14px;
+    border: 1px dashed var(--divider);
+    color: var(--text-faintest);
+  }
 }
 
 @media (max-width: 560px) {
