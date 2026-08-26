@@ -69,16 +69,33 @@ function territoryPosition(index, count) {
 // The real chain, as levels: current state -> barrier -> move ->
 // opportunity. Empty levels are dropped entirely (no goal set yet just
 // means the chain starts at whatever's first real) so the visual never
-// implies a step that doesn't exist.
+// implies a step that doesn't exist. A barrier that just cleared
+// (subNodes.dissolvingBarriers, from the same canonical transition
+// events Today's Barrier Dissolve consumes — see
+// lib/todayIntelligence.js's buildCreditSubNodes) renders in the same
+// tier as any barrier still active, tagged `dissolving`, never in a
+// tier of its own.
 function buildChainLevels(subNodes) {
   if (!subNodes) return [];
+  const barrierTier = [...(subNodes.barriers ?? []), ...(subNodes.dissolvingBarriers ?? [])];
   const tiers = [
     subNodes.goal ? [subNodes.goal] : [],
-    subNodes.barriers,
+    barrierTier,
     subNodes.move ? [subNodes.move] : [],
-    subNodes.opportunities,
+    subNodes.opportunities ?? [],
   ];
   return tiers.filter((t) => t.length > 0);
+}
+
+// Whether the route beyond the barrier tier can carry the "clear" pulse
+// downstream — real dependency check: only when a barrier actually just
+// dissolved AND no other real barrier still occupies that tier. Never
+// travels further than the remaining obstruction count allows.
+function barrierTierIndex(subNodes) {
+  return subNodes?.goal ? 1 : 0;
+}
+function isPulseUnlocked(subNodes) {
+  return (subNodes?.dissolvingBarriers?.length ?? 0) > 0 && (subNodes?.remainingBarrierCount ?? 0) === 0;
 }
 
 function levelPosition(levelIndex, levelCount, nodeIndex, nodeCount) {
@@ -102,13 +119,27 @@ function ChainDiagram({ territory }) {
 
   const positioned = levels.map((level, li) => level.map((n, ni) => ({ ...n, pos: levelPosition(li, levels.length, ni, level.length) })));
   const gatewayY = positioned[0][0].pos.y - 10;
+  const barrierTierLi = barrierTierIndex(territory.subNodes);
+  const pulseUnlocked = isPulseUnlocked(territory.subNodes);
 
   const edges = [];
-  positioned[0].forEach((n) => edges.push({ key: `trunk-${n.id}`, x1: 50, y1: gatewayY, x2: n.pos.x, y2: n.pos.y, cls: 'life-map-edge--trunk' }));
+  positioned[0].forEach((n) => edges.push({
+    key: `trunk-${n.id}`, x1: 50, y1: gatewayY, x2: n.pos.x, y2: n.pos.y,
+    cls: 'life-map-edge--trunk', dissolving: n.dissolving,
+  }));
   for (let li = 1; li < positioned.length; li += 1) {
     positioned[li].forEach((n) => {
       positioned[li - 1].forEach((p) => {
-        edges.push({ key: `${p.id}-${n.id}`, x1: p.pos.x, y1: p.pos.y, x2: n.pos.x, y2: n.pos.y, cls: `life-map-edge--chain life-map-edge--${n.kind}` });
+        // An edge lands "in dissolve" when it's arriving at a barrier
+        // that just cleared (the obstruction reconnecting); it carries
+        // the pulse onward only leaving the barrier tier, and only when
+        // no real barrier remains to block it.
+        const dissolving = n.dissolving || p.dissolving;
+        const pulsing = li - 1 === barrierTierLi && pulseUnlocked;
+        edges.push({
+          key: `${p.id}-${n.id}`, x1: p.pos.x, y1: p.pos.y, x2: n.pos.x, y2: n.pos.y,
+          cls: `life-map-edge--chain life-map-edge--${n.kind}`, dissolving, pulsing,
+        });
       });
     });
   }
@@ -119,16 +150,68 @@ function ChainDiagram({ territory }) {
       <svg className="life-map-edges" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
         <line x1="50" y1={gatewayY - 8} x2="50" y2={gatewayY} className="life-map-edge life-map-edge--trunk" />
         {edges.map((e) => (
-          <line key={e.key} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} className={`life-map-edge ${e.cls}`} />
+          e.dissolving ? (
+            <g key={e.key}>
+              <line x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} className="life-map-edge life-map-edge--dissolve-broken" />
+              <line x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} className="life-map-edge life-map-edge--dissolve-open" />
+            </g>
+          ) : (
+            <line
+              key={e.key} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2}
+              className={`life-map-edge ${e.cls}${e.pulsing ? ' life-map-edge--pulse' : ''}`}
+            />
+          )
         ))}
       </svg>
       {subNodesFlat.map((n) => (
-        <div key={n.id} className={`life-map-subnode ${KIND_CLASS[n.kind] ?? ''}`} style={{ left: `${n.pos.x}%`, top: `${n.pos.y}%` }}>
-          <span className="life-map-subnode-kind">{KIND_LABEL[n.kind]}</span>
+        <div
+          key={n.id}
+          className={`life-map-subnode ${KIND_CLASS[n.kind] ?? ''}${n.dissolving ? ' life-map-subnode--dissolving' : ''}${n.isNew ? ' life-map-subnode--emerging' : ''}`}
+          style={{ left: `${n.pos.x}%`, top: `${n.pos.y}%` }}
+        >
+          <span className="life-map-subnode-kind">{n.dissolving ? 'Cleared' : KIND_LABEL[n.kind]}</span>
           <span className="life-map-subnode-label">{n.label}</span>
         </div>
       ))}
     </div>
+  );
+}
+
+// Mobile's own vertical version — not the desktop diagram shrunk. One
+// connector between each real tier boundary (never between same-tier
+// siblings, since they aren't connected to each other), carrying the
+// same dissolving/pulse state the desktop connectors carry so the
+// "barrier clears, then the route opens as far as reality allows"
+// behavior reads the same way on touch.
+function MobileChain({ territory }) {
+  const levels = buildChainLevels(territory.subNodes);
+  const barrierTierLi = barrierTierIndex(territory.subNodes);
+  const pulseUnlocked = isPulseUnlocked(territory.subNodes);
+
+  return (
+    <ol className="life-map-mobile-chain">
+      {levels.map((level, li) => (
+        <li key={li} className="life-map-mobile-tier">
+          {li > 0 && (
+            <span
+              className={`life-map-mobile-connector${levels[li - 1].some((n) => n.dissolving) ? ' life-map-mobile-connector--dissolve' : ''}${li - 1 === barrierTierLi && pulseUnlocked ? ' life-map-mobile-connector--pulse' : ''}`}
+              aria-hidden="true"
+            />
+          )}
+          <div className="life-map-mobile-tier-nodes">
+            {level.map((n) => (
+              <div
+                key={n.id}
+                className={`life-map-subnode life-map-subnode--mobile ${KIND_CLASS[n.kind] ?? ''}${n.dissolving ? ' life-map-subnode--dissolving' : ''}${n.isNew ? ' life-map-subnode--emerging' : ''}`}
+              >
+                <span className="life-map-subnode-kind">{n.dissolving ? 'Cleared' : KIND_LABEL[n.kind]}</span>
+                <span className="life-map-subnode-label">{n.label}</span>
+              </div>
+            ))}
+          </div>
+        </li>
+      ))}
+    </ol>
   );
 }
 
@@ -236,14 +319,7 @@ export default function LifeMap({ territories }) {
         {selectedTerritory && (
           <div className="life-map-mobile-sheet">
             {hasChain(selectedTerritory) ? (
-              <ul className="life-map-mobile-chain">
-                {buildChainLevels(selectedTerritory.subNodes).flat().map((n) => (
-                  <li key={n.id} className={`life-map-subnode ${KIND_CLASS[n.kind] ?? ''} life-map-subnode--mobile`}>
-                    <span className="life-map-subnode-kind">{KIND_LABEL[n.kind]}</span>
-                    <span className="life-map-subnode-label">{n.label}</span>
-                  </li>
-                ))}
-              </ul>
+              <MobileChain territory={selectedTerritory} />
             ) : (
               <div className="life-map-not-mapped life-map-not-mapped--mobile">
                 <span className="life-map-not-mapped-title">Not mapped yet</span>

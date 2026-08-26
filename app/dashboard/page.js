@@ -23,10 +23,11 @@ import { ROOMS } from '../../lib/rooms';
 import { statusFromClerkUser, hasRequiredStatus } from '../../lib/clientStatus';
 import { listFeatures, evaluateFeatureAccess, roomFeatureKey } from '../../lib/features';
 import { reconcileCreditIntelligence } from '../../lib/intelligenceCore';
+import { buildTransitionEvents } from '../../lib/transitions';
 import {
   timeOfDayGreeting, canSeeRoomIntelligence, buildChangeSummary,
   buildAccountLevelMove, buildLifeMapGraph, buildOpportunityLadder, buildMoveSignals,
-  buildChangeRipples, buildDominoCascade, buildDissolveEvents,
+  buildChangeRipples, buildDominoCascade,
 } from '../../lib/todayIntelligence';
 
 const STATUS_LABELS = { applicant: 'Applicant', accepted: 'Accepted', paid: 'Paid' };
@@ -43,7 +44,7 @@ export default async function TodayPage() {
   const creditRoom = ROOMS.find((room) => room.slug === 'credit');
   const canSeeCredit = canSeeRoomIntelligence(status, creditRoom) && isRoomLive('credit');
   const creditRoomResult = canSeeCredit ? await reconcileCreditIntelligence(user.id) : null;
-  const dissolveEvents = buildDissolveEvents(creditRoomResult);
+  const dissolveEvents = buildTransitionEvents(creditRoomResult);
 
   const { changedCount, attentionCount } = creditRoomResult
     ? buildChangeSummary([creditRoomResult])

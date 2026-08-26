@@ -26,7 +26,7 @@ const OUTCOME_LABEL = { barrier_cleared: 'BARRIER CLEARED', opportunity_unlocked
 
 function DissolveCard({ event }) {
   const [open, setOpen] = useState(false);
-  const isBarrier = event.kind === 'barrier_cleared';
+  const isBarrier = event.eventType === 'barrier_cleared';
 
   return (
     <div className="dissolve-card">
@@ -38,7 +38,7 @@ function DissolveCard({ event }) {
           <span className="dissolve-connector-broken" />
           <span className="dissolve-connector-open" />
         </span>
-        <span className="dissolve-outcome">{OUTCOME_LABEL[event.kind]}</span>
+        <span className="dissolve-outcome">{OUTCOME_LABEL[event.eventType]}</span>
       </div>
       <p className="dissolve-result">{isBarrier ? event.resolutionNote : event.title}</p>
 
