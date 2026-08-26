@@ -1434,6 +1434,15 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
   .life-map-not-mapped--mobile { position: static; padding: 8px 4px; }
 }
 
+/* What Changed as an intelligence summary — one real headline instead
+   of a flat feed (lib/todayIntelligence.js's buildChangeStory). Quieter
+   than THE CHEW MOVE (this is a summary of the past, not an instruction)
+   but still gets its own visual weight so it doesn't read as just
+   another list item. */
+.change-story { margin-bottom: 4px; }
+.change-story-headline { font-size: 0.95rem; font-weight: 600; margin: 0 0 4px; }
+.change-story-coincided { font-size: 0.83rem; margin: 0; }
+
 /* What Changed Ripple — each change names the real section it affects
    (lib/todayIntelligence.js's buildChangeRipples), and that section's
    eyebrow (.ripple-glow, applied conditionally in page.js) pulses once

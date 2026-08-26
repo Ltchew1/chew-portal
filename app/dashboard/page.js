@@ -27,7 +27,7 @@ import { buildTransitionEvents } from '../../lib/transitions';
 import {
   timeOfDayGreeting, canSeeRoomIntelligence, buildChangeSummary,
   buildAccountLevelMove, buildLifeMapGraph, buildOpportunityRadar, buildMoveSignals,
-  buildChangeRipples, buildDominoCascade, buildCrossSystemDomino,
+  buildChangeRipples, buildDominoCascade, buildCrossSystemDomino, buildChangeStory,
 } from '../../lib/todayIntelligence';
 
 const STATUS_LABELS = { applicant: 'Applicant', accepted: 'Accepted', paid: 'Paid' };
@@ -72,6 +72,7 @@ export default async function TodayPage() {
     });
   const opportunityRadar = buildOpportunityRadar({ creditIntel: creditRoomResult, dormantRooms });
   const ripple = buildChangeRipples(creditRoomResult?.whatChanged);
+  const changeStory = buildChangeStory(creditRoomResult);
   const affected = { ...ripple.affected, ...domino.affected, ...crossSystemDomino.affected };
   const rippleClass = (system) => (affected[system] ? ' ripple-glow' : '');
 
@@ -116,7 +117,7 @@ export default async function TodayPage() {
         <RevealOnScroll className="today-reveal">
           <span className="today-section-eyebrow">What changed</span>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
-            <WhatChangedRipple items={ripple.items} />
+            <WhatChangedRipple story={changeStory} items={ripple.items} />
             {creditRoomResult.chewNoticed.length > 0 && (
               <div className="card">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
