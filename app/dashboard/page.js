@@ -24,12 +24,11 @@ import { ROOMS } from '../../lib/rooms';
 import { statusFromClerkUser, hasRequiredStatus } from '../../lib/clientStatus';
 import { listFeatures, evaluateFeatureAccess, roomFeatureKey } from '../../lib/features';
 import { reconcileCreditIntelligence } from '../../lib/intelligenceCore';
-import { buildTransitionEvents } from '../../lib/transitions';
-import { computeMomentLevel } from '../../lib/portalReactions';
+import { buildPortalReactions } from '../../lib/portalReactions';
 import {
   timeOfDayGreeting, canSeeRoomIntelligence, buildChangeSummary,
   buildAccountLevelMove, buildLifeMapGraph, buildOpportunityRadar, buildMoveSignals,
-  buildChangeRipples, buildDominoCascade, buildCrossSystemDomino, buildChangeStory,
+  buildChangeRipples, buildDominoCascade, buildChangeStory,
 } from '../../lib/todayIntelligence';
 
 const STATUS_LABELS = { applicant: 'Applicant', accepted: 'Accepted', paid: 'Paid' };
@@ -46,9 +45,12 @@ export default async function TodayPage() {
   const creditRoom = ROOMS.find((room) => room.slug === 'credit');
   const canSeeCredit = canSeeRoomIntelligence(status, creditRoom) && isRoomLive('credit');
   const creditRoomResult = canSeeCredit ? await reconcileCreditIntelligence(user.id) : null;
-  const dissolveEvents = buildTransitionEvents(creditRoomResult);
-  const crossSystemDomino = buildCrossSystemDomino(creditRoomResult);
-  const momentLevel = computeMomentLevel(creditRoomResult);
+  // The single Cross-System State Propagation entry point (see
+  // lib/portalReactions.js) — computes transitionEvents/domino/level
+  // exactly once for this page load; every surface below consumes these
+  // same values instead of independently re-deriving "did something just
+  // happen" from creditRoomResult.
+  const { level: momentLevel, events: dissolveEvents, domino: crossSystemDomino } = buildPortalReactions(creditRoomResult);
 
   const { changedCount, attentionCount } = creditRoomResult
     ? buildChangeSummary([creditRoomResult])
@@ -68,14 +70,14 @@ export default async function TodayPage() {
   // Icons are rendered here (server side, same as every other room icon in
   // the app) and passed down as elements — LifeMap (a client component)
   // never needs its own icon imports or a room->icon lookup of its own.
-  const lifeMapGraph = buildLifeMapGraph({ rooms: ROOMS, status, isRoomLive, creditIntel: creditRoomResult })
+  const lifeMapGraph = buildLifeMapGraph({ rooms: ROOMS, status, isRoomLive, creditIntel: creditRoomResult, transitionEvents: dissolveEvents })
     .map((territory) => {
       const Icon = ROOMS.find((r) => r.slug === territory.slug)?.icon;
       return { ...territory, icon: Icon ? <Icon /> : null };
     });
-  const opportunityRadar = buildOpportunityRadar({ creditIntel: creditRoomResult, dormantRooms });
+  const opportunityRadar = buildOpportunityRadar({ creditIntel: creditRoomResult, dormantRooms, transitionEvents: dissolveEvents });
   const ripple = buildChangeRipples(creditRoomResult?.whatChanged);
-  const changeStory = buildChangeStory(creditRoomResult);
+  const changeStory = buildChangeStory(creditRoomResult, crossSystemDomino);
   const affected = { ...ripple.affected, ...domino.affected, ...crossSystemDomino.affected };
   const rippleClass = (system) => (affected[system] ? ' ripple-glow' : '');
 
