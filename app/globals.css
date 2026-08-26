@@ -1464,6 +1464,64 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
 }
 .world-reaction--landmark { animation: world-reaction-landmark 2.6s ease-out both; }
 
+/* SIGNATURE SESSION CHOREOGRAPHY — a brief, skippable full-viewport
+   return sequence (app/components/today/SessionChoreography.js). Higher
+   specificity than `.today-bg > *` (see that rule above) so this stays a
+   fixed, full-viewport layer instead of an in-flow relative child. */
+.today-bg .choreography-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  padding: var(--space-6);
+  background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(201,162,39,0.08) 0%, transparent 70%), var(--black);
+  text-align: center;
+  animation: choreography-in 0.5s ease both;
+}
+.choreography-overlay--closing { animation: choreography-out 0.5s ease both; }
+@keyframes choreography-in { 0% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes choreography-out { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+.choreography-stage-wrap {
+  max-width: 60ch;
+  min-height: 3.2em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.choreography-line {
+  margin: 0;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: clamp(1.3rem, 3.4vw, 1.9rem);
+  font-weight: 600;
+  color: var(--text);
+  animation: choreography-line-in 0.6s ease both;
+}
+.choreography-line--headline { color: var(--gold-light); }
+@keyframes choreography-line-in {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.choreography-skip {
+  background: transparent;
+  border: 1px solid var(--panel-border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-faint);
+  font-size: 0.85rem;
+  padding: 8px 18px;
+  cursor: pointer;
+}
+.choreography-skip:hover, .choreography-skip:focus-visible {
+  color: var(--gold-light);
+  border-color: var(--gold-light);
+}
+.choreography-skip:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 2px; }
+
 /* What Changed as an intelligence summary — one real headline instead
    of a flat feed (lib/todayIntelligence.js's buildChangeStory). Quieter
    than THE CHEW MOVE (this is a summary of the past, not an instruction)

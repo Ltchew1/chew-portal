@@ -19,6 +19,7 @@ import LifeMap from '../components/today/LifeMap';
 import OpportunityRadar from '../components/today/OpportunityRadar';
 import ComingToCommandCenter from '../components/today/ComingToCommandCenter';
 import ProgressWorldReaction from '../components/today/ProgressWorldReaction';
+import SessionChoreography from '../components/today/SessionChoreography';
 import { IconSparkles } from '../components/icons';
 import { ROOMS } from '../../lib/rooms';
 import { statusFromClerkUser, hasRequiredStatus } from '../../lib/clientStatus';
@@ -28,7 +29,7 @@ import { buildPortalReactions } from '../../lib/portalReactions';
 import {
   timeOfDayGreeting, canSeeRoomIntelligence, buildChangeSummary,
   buildAccountLevelMove, buildLifeMapGraph, buildOpportunityRadar, buildMoveSignals,
-  buildChangeRipples, buildDominoCascade, buildChangeStory,
+  buildChangeRipples, buildDominoCascade, buildChangeStory, pickTopChangeText,
 } from '../../lib/todayIntelligence';
 
 const STATUS_LABELS = { applicant: 'Applicant', accepted: 'Accepted', paid: 'Paid' };
@@ -81,8 +82,25 @@ export default async function TodayPage() {
   const affected = { ...ripple.affected, ...domino.affected, ...crossSystemDomino.affected };
   const rippleClass = (system) => (affected[system] ? ' ripple-glow' : '');
 
+  // Signature Session Choreography's inputs — the same real headline and
+  // counts Today already renders in plain text below, plus a key built
+  // from real event ids (or, lacking those, real whatChanged timestamps)
+  // so the one-shot guard is tied to an actual detected change, never a
+  // generic per-day flag. See SessionChoreography.js.
+  const topItemText = pickTopChangeText(changeStory, dissolveEvents);
+  const choreographyKey = dissolveEvents.length > 0
+    ? dissolveEvents.map((e) => e.id).join(',')
+    : (creditRoomResult?.whatChanged ?? []).map((c) => `${c.eventType}:${c.date}`).join(',');
+
   return (
     <div className="today-bg">
+      <SessionChoreography
+        level={momentLevel}
+        changedCount={changedCount}
+        attentionCount={attentionCount}
+        topItemText={topItemText}
+        eventKey={choreographyKey}
+      />
       <ProgressWorldReaction level={momentLevel} />
       <span className="today-eyebrow">Today</span>
       <h1 className="today-greeting">{timeOfDayGreeting()} {firstName}.</h1>
