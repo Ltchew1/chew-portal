@@ -25,7 +25,7 @@ import { ROOMS } from '../../lib/rooms';
 import { statusFromClerkUser, hasRequiredStatus } from '../../lib/clientStatus';
 import { listFeatures, evaluateFeatureAccess, roomFeatureKey } from '../../lib/features';
 import { reconcileCreditIntelligence } from '../../lib/intelligenceCore';
-import { buildPortalReactions } from '../../lib/portalReactions';
+import { buildPortalReactions, reactionsFor } from '../../lib/portalReactions';
 import {
   timeOfDayGreeting, canSeeRoomIntelligence, buildChangeSummary,
   buildAccountLevelMove, buildLifeMapGraph, buildOpportunityRadar, buildMoveSignals,
@@ -51,16 +51,33 @@ export default async function TodayPage() {
   // exactly once for this page load; every surface below consumes these
   // same values instead of independently re-deriving "did something just
   // happen" from creditRoomResult.
-  const { level: momentLevel, events: dissolveEvents, domino: crossSystemDomino } = buildPortalReactions(creditRoomResult);
+  const { level: momentLevel, events: dissolveEvents, domino: crossSystemDomino, reactions } = buildPortalReactions(creditRoomResult);
 
   const { changedCount, attentionCount } = creditRoomResult
     ? buildChangeSummary([creditRoomResult])
     : { changedCount: 0, attentionCount: 0 };
 
   const move = creditRoomResult?.nextBestMove ?? buildAccountLevelMove(status);
+  // Real, honest reason for the one case `move` is null: a paid client
+  // whose Credit room isn't live yet (a feature-flag state, not a guess).
+  const noMoveReason = move ? null : (!isRoomLive('credit')
+    ? "Credit isn't turned on for your account yet — check back soon."
+    : "CHEW doesn't have enough verified information yet.");
   const urgentMove = creditRoomResult?.planStatus === 'plan_at_risk';
   const moveSignals = buildMoveSignals(creditRoomResult);
   const domino = buildDominoCascade(move);
+  const goal = creditRoomResult?.goal ?? null;
+
+  // THE CHEW MOVE's own slice of the shared reaction contract — the
+  // single recommendation_changed reaction (SURFACE_CONTRACT.chewMove),
+  // never independently re-detected. `moveChanged` gates the card's
+  // one-shot signature reveal; `previousActionText` is the real prior
+  // action text (only ever present on a genuine change, never on an
+  // ordinary revisit — see lib/transitions.js).
+  const moveReaction = reactionsFor(reactions, 'chewMove')[0] ?? null;
+  const moveChanged = !!moveReaction;
+  const previousActionText = moveReaction?.explanation?.previousActionText ?? null;
+  const moveLevel = moveReaction?.level ?? null;
 
   const readyCount = ROOMS.filter((room) => isRoomLive(room.slug) && hasRequiredStatus(status, room.requiredStatus)).length;
   // Only Credit has a real opportunity-detection pipeline today (see
@@ -91,6 +108,13 @@ export default async function TodayPage() {
   const choreographyKey = dissolveEvents.length > 0
     ? dissolveEvents.map((e) => e.id).join(',')
     : (creditRoomResult?.whatChanged ?? []).map((c) => `${c.eventType}:${c.date}`).join(',');
+  // Session Choreography handoff: a server-side approximation of "will the
+  // overlay actually play" (it also depends on client-only reduced-motion
+  // and sessionStorage checks — see SessionChoreography.js — so this can't
+  // be exact). When it's likely and the move is what changed, THE CHEW
+  // MOVE's own reveal waits a beat longer so it settles into view around
+  // when the overlay closes, instead of finishing off-screen behind it.
+  const choreographyLikely = momentLevel !== null && !!topItemText;
 
   return (
     <div className="today-bg">
@@ -134,7 +158,19 @@ export default async function TodayPage() {
         </div>
       </div>
 
-      <ChewMoveCard move={move} urgent={urgentMove} signals={moveSignals} domino={domino} />
+      <ChewMoveCard
+        move={move}
+        noMoveReason={noMoveReason}
+        urgent={urgentMove}
+        signals={moveSignals}
+        domino={domino}
+        goal={goal}
+        changed={moveChanged}
+        previousActionText={previousActionText}
+        level={moveLevel}
+        connects={crossSystemDomino}
+        handoffDelay={moveChanged && choreographyLikely}
+      />
 
       {dissolveEvents.length > 0 && (
         <RevealOnScroll className="today-reveal">

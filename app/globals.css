@@ -899,25 +899,38 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
   max-width: 56ch;
 }
 
-/* THE CHEW MOVE — Today's hero card. Not just another .card: a step
-   heavier surface and a hairline gold border mark it as the one thing on
-   the screen the client is meant to act on, echoing but exceeding
-   .next-move-card's treatment (that one sits among several cards inside a
-   room; this one *is* the room). */
-/* The CHEW Move reveal — a one-time resolve on mount, since this card is
-   always the first meaningful thing on the page (never scroll-triggered
-   like the Life Map's territory nodes). A brief rise + glow flash, not a spectacle: the
-   move itself is real and singular, so the moment introducing it should
-   feel confident, not theatrical. */
+/* THE CHEW MOVE — Today's hero card, the visual and strategic center of
+   the page. A step heavier surface, a hairline gold border, and a
+   stronger shadow/glow than any other card on Today mark it as the one
+   thing the client is meant to act on — every other module (What
+   Changed, What's Opening, What's Waiting, the world below) stays
+   visually quieter than this by design (see .card's flat, borderless
+   default further down for the contrast). */
+/* The CHEW Move reveal — gated to a REAL change (see ChewMoveCard.js's
+   `changed` prop, sourced from the single recommendation_changed
+   reaction). No `.chew-move-card--changed` class -> no animation at all;
+   the base class below already renders the exact resting values the
+   animation would otherwise end on, so an unchanged revisit looks
+   identical to "settled," just without ever having played anything. */
 @keyframes chew-move-resolve {
   0% { opacity: 0; transform: translateY(16px) scale(0.985); box-shadow: 0 24px 50px rgba(0,0,0,0.5), 0 0 0 rgba(201,162,39,0); }
   60% { box-shadow: 0 24px 50px rgba(0,0,0,0.5), 0 0 56px rgba(201,162,39,0.28); }
   100% { opacity: 1; transform: translateY(0) scale(1); box-shadow: 0 24px 50px rgba(0,0,0,0.5), 0 0 44px rgba(201,162,39,0.1); }
 }
+/* The isolated variant never touches opacity — animation-delay + fill-
+   mode:both holds an element at its 0% keyframe for the whole delay, so
+   an opacity:0 0% state would hide the isolation chips too (they're
+   this card's own children). Rise + glow only, so the card — and the
+   real isolation signals playing inside it — stay visible throughout. */
+@keyframes chew-move-resolve-visible {
+  0% { transform: translateY(10px) scale(0.99); box-shadow: 0 24px 50px rgba(0,0,0,0.5), 0 0 0 rgba(201,162,39,0); }
+  60% { box-shadow: 0 24px 50px rgba(0,0,0,0.5), 0 0 56px rgba(201,162,39,0.28); }
+  100% { transform: translateY(0) scale(1); box-shadow: 0 24px 50px rgba(0,0,0,0.5), 0 0 44px rgba(201,162,39,0.1); }
+}
 .chew-move-card {
   position: relative;
   margin: 28px 0;
-  padding: 32px 30px;
+  padding: 34px 32px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--panel-border-strong);
   background:
@@ -925,9 +938,23 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
     linear-gradient(180deg, rgba(201,162,39,0.08), rgba(201,162,39,0) 55%),
     var(--black-elev);
   box-shadow: 0 24px 50px rgba(0,0,0,0.5), 0 0 44px rgba(201,162,39,0.1), inset 0 1px 0 rgba(255,255,255,0.06);
-  animation: chew-move-resolve 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
-  animation-delay: 0.15s;
 }
+.chew-move-card--changed {
+  animation: chew-move-resolve 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--chew-move-delay, 0.5s);
+}
+.chew-move-card--changed.chew-move-card--isolated { animation-name: chew-move-resolve-visible; }
+/* Moment-level integration — reuses lib/portalReactions.js's existing
+   moment levels (never a second severity scale). Only ever applied
+   alongside --changed, so an unchanged card never gets an intensity
+   variant it hasn't earned. */
+.chew-move-card--level-major { box-shadow: 0 24px 50px rgba(0,0,0,0.5), 0 0 60px rgba(201,162,39,0.18), inset 0 1px 0 rgba(255,255,255,0.06); }
+.chew-move-card--level-landmark { box-shadow: 0 24px 50px rgba(0,0,0,0.5), 0 0 76px rgba(201,162,39,0.26), inset 0 1px 0 rgba(255,255,255,0.08); }
+
+.chew-move-card--empty { text-align: left; }
+.chew-move-action--empty { color: var(--text-faint); font-weight: 600; }
+.chew-move-empty-reason { margin: 0; font-size: 0.9rem; color: var(--text-faint); }
+
 .chew-move-eyebrow {
   display: flex; align-items: center; gap: 8px;
   color: var(--gold-light);
@@ -939,13 +966,32 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
 }
 .chew-move-eyebrow--urgent { color: var(--danger); }
 
+/* Before/Now — real prior action text only (ChewMoveCard.js's
+   `previousActionText`, sourced from the recommendation_changed
+   reaction's own explanation, never fabricated). Struck through, not
+   hidden: the point is continuity — CHEW was doing something before,
+   and here is what it's doing now (the heading right below this). */
+.chew-move-previous {
+  margin: 0 0 6px;
+  font-size: 0.82rem;
+  color: var(--text-faintest);
+}
+.chew-move-previous-text { text-decoration: line-through; text-decoration-color: var(--text-faintest); }
+
 /* The isolation sequence — real tracked signals (barriers/opportunities/
    chewNoticed, see lib/todayIntelligence.js's buildMoveSignals) surface
    briefly as scattered chips, then recede as the move resolves. One-shot
    on mount (no loop — nothing here burns battery after ~1.8s), and the
    whole block is aria-hidden since every signal it shows is also read
    verbatim elsewhere on the page (What's Waiting, Opportunity Ladder). */
-.chew-isolation { margin-bottom: 6px; }
+/* Collapses the reserved space after the chips finish receding (~1.8s)
+   instead of leaving a dead gap above the resolved move — a flagship
+   card earns its dominance partly by never sitting on empty space. */
+@keyframes chew-isolation-collapse {
+  0%, 75% { height: 46px; margin-bottom: 6px; }
+  100% { height: 0; margin-bottom: 0; }
+}
+.chew-isolation { overflow: hidden; animation: chew-isolation-collapse 2s ease both; }
 .chew-isolation-kicker {
   display: block;
   font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
@@ -981,11 +1027,11 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
 .chew-isolation-chip--noticed { border-color: rgba(201,162,39,0.3); }
 
 /* When an isolation sequence plays, the card's own resolve (see
-   chew-move-resolve below) waits until the chips have receded instead of
-   firing immediately — the move should brighten as the noise clears, not
-   before it. */
-.chew-move-card--isolated { animation-delay: 1.35s; }
-.chew-move-action { font-size: clamp(1.35rem, 3vw, 1.75rem); margin-bottom: 4px; }
+   chew-move-resolve above) waits until the chips have receded instead of
+   firing immediately — via ChewMoveCard.js's --chew-move-delay custom
+   property (isolation vs. handoff vs. plain timing), not a fixed class
+   rule, so it can share the same mechanism as the handoff delay. */
+.chew-move-action { font-size: clamp(1.6rem, 3.4vw, 2.1rem); margin-bottom: 4px; }
 
 /* Domino Cascade — "ONE MOVE. N EFFECTS." Each step fades/slides in on
    its own beat (see the inline animationDelay in DominoCascade) so the
@@ -1044,6 +1090,32 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
   font-weight: 500;
   color: var(--text-faint);
 }
+
+/* Leverage map's cross-system half — real co-occurring transitions
+   (ChewMoveCard.js's ConnectsTo, reading the same crossSystemDomino
+   object BarrierDissolve's "Domino effect" row already renders). A
+   quieter, steel-toned treatment (not gold) so it reads as "also true
+   right now" rather than competing with the move's own gold leverage
+   chips above. */
+.chew-move-connects { margin: 10px 0 4px; }
+.chew-move-connects-kicker {
+  display: block;
+  font-size: 0.66rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-faintest);
+  margin-bottom: 8px;
+}
+.chew-move-connects-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.chew-move-connects-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 0.78rem;
+  color: var(--steel-light);
+  background: rgba(74,147,181,0.1);
+  border: 1px solid rgba(74,147,181,0.3);
+  padding: 5px 12px;
+  border-radius: 14px;
+}
+.chew-move-connects-arrow { color: var(--steel-light); flex-shrink: 0; opacity: 0.7; }
+
 .chew-move-toggle {
   display: inline-flex; align-items: center; gap: 6px;
   background: none; border: none; padding: 0;
