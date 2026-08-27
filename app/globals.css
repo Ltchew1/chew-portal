@@ -1814,7 +1814,6 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
 .radar-node-label--button:hover { color: var(--gold-light); }
 .radar-node-label--button:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 2px; border-radius: 4px; }
 .radar-node-sub { font-size: 0.66rem; color: var(--text-faintest); }
-.radar-node-link { font-size: 0.74rem; font-weight: 600; }
 .radar-node--active { border-color: rgba(74,155,110,0.4); box-shadow: 0 0 14px rgba(74,155,110,0.14); }
 /* A member's own selection (local, visual-only state — separate from
    Cross-System Focus Mode's dim/highlight, which a *different* source

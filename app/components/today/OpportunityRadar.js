@@ -5,23 +5,18 @@
 // Life Map established (same CHEW spatial grammar, not a second
 // invention) but with only the two provable states:
 //
-// Active — real, grounded opportunities (lib/homeIntelligence.js). No
-// stable id exists for these (they're computed candidates, not
-// persisted rows — see lib/homeIntelligence.js's `opportunities`), so
-// selecting one is Cross-System Focus Mode Level 1 only: the node
-// selects itself visually and the section glows, but no nodeId is
-// fabricated to chase a connection the data can't prove.
-//
-// Newly unlocked — the same canonical opportunity_unlocked transitions
-// Life Map's dissolve integration reads (lib/transitions.js), rendered
-// with their own real title/whatImproved. These carry a real entityId,
-// so selecting one reaches Level 2: the exact same real opportunity row
-// lights up wherever else it appears (Life Map's opportunity subnode),
-// via the shared `opportunity:<id>` nodeId scheme
-// (lib/todayIntelligence.js's buildCreditSubNodes). Not cross-referenced
-// against the active list by title-matching (that would be a guess, not
-// a fact) — both are independently real and both get their own node,
-// even if in a given moment they describe the same underlying change.
+// Active and Newly Unlocked are two VIEWS of the same canonical
+// identity — every node here (including "active" ones, since the
+// Opportunity Identity Gap Review pass) is a real, persisted
+// lib/opportunities.js row, carrying the same real `id` Life Map's
+// opportunity subnodes and the opportunity_unlocked transition event's
+// `entityId` already reference (lib/todayIntelligence.js's
+// buildOpportunityRadar excludes whatever unlocked THIS pass from the
+// active list, so one real opportunity is exactly one node, never
+// both). Selecting either kind reaches Cross-System Focus Mode Level 2:
+// the same `opportunity:<id>` nodeId lights up wherever else that exact
+// row appears. Never title-matched, never a fabricated id — see that
+// function's header comment for the full identity invariant.
 //
 // The outer ring is real, named dormant rooms (never a fabricated
 // "blocked opportunity" count) — "Visible" and "Blocked" opportunity
@@ -33,7 +28,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { setFocus, clearFocus } from './focusBus';
 
 // A full sweep around the center, not a dome above it like Life Map —
@@ -57,26 +51,26 @@ export default function OpportunityRadar({ radar }) {
   const { availableNow, newlyUnlocked, dormant } = radar;
   const [selectedKey, setSelectedKey] = useState(null);
   const anchor = { x: RADAR_CX, y: RADAR_CY };
-  const activeNodes = availableNow.map((o, i) => ({ ...o, kind: 'active', key: `active-${i}`, pos: innerPosition(i, availableNow.length) }));
-  // Newly-unlocked nodes share the inner ring's radius band but are
-  // interleaved after the active ones, not overlapping them.
+  // Real id either way: availableNow's `id` (the persisted row) and
+  // newlyUnlocked's `entityId` (the transition event's reference to that
+  // same row) are the same canonical identity — normalized here to one
+  // `realId` field so the rest of this component never has to branch on
+  // which kind of node it's looking at.
+  const activeNodes = availableNow.map((o, i) => ({ ...o, kind: 'active', key: `active-${o.id}`, realId: o.id, pos: innerPosition(i, availableNow.length) }));
   const unlockedNodes = newlyUnlocked.map((e, i) => ({
-    ...e, kind: 'unlocked', key: `unlocked-${e.id}`,
+    ...e, kind: 'unlocked', key: `unlocked-${e.id}`, realId: e.entityId,
     pos: innerPosition(activeNodes.length + i, activeNodes.length + newlyUnlocked.length),
   }));
   const dormantNodes = dormant.map((d, i) => ({ ...d, pos: outerPosition(i, dormant.length) }));
   const isEmpty = activeNodes.length === 0 && unlockedNodes.length === 0;
 
-  // Cross-System Focus Mode — an active node has no real id to connect
-  // with elsewhere (Level 1: it selects itself and the section glows);
-  // an unlocked node's real entityId becomes the same nodeId scheme Life
-  // Map's opportunity subnodes carry, reaching Level 2.
+  // Cross-System Focus Mode — both kinds carry the same real
+  // `opportunity:<id>` nodeId scheme now, so both reach Level 2.
   function selectNode(node) {
     setSelectedKey((was) => {
       const willSelect = was !== node.key;
       if (willSelect) {
-        const nodeIds = node.kind === 'unlocked' ? [`opportunity:${node.entityId}`] : [];
-        setFocus(`radar:${node.key}`, { opportunity: true, ...(node.kind === 'unlocked' ? { life_map: true } : {}) }, { nodeIds, label: node.title });
+        setFocus(`radar:${node.key}`, { opportunity: true, life_map: true }, { nodeIds: [`opportunity:${node.realId}`], label: node.title });
         return node.key;
       }
       clearFocus(`radar:${node.key}`);
@@ -95,7 +89,7 @@ export default function OpportunityRadar({ radar }) {
       <div className="radar-stage--desktop">
         <svg className="radar-edges" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
           {[...activeNodes, ...unlockedNodes].map((n) => (
-            <line key={`edge-${n.id ?? n.title}`} x1={anchor.x} y1={anchor.y} x2={n.pos.x} y2={n.pos.y} className={`radar-edge${n.kind === 'unlocked' ? ' radar-edge--unlocked' : ''}`} />
+            <line key={`edge-${n.key}`} x1={anchor.x} y1={anchor.y} x2={n.pos.x} y2={n.pos.y} className={`radar-edge${n.kind === 'unlocked' ? ' radar-edge--unlocked' : ''}`} />
           ))}
         </svg>
 
@@ -110,11 +104,15 @@ export default function OpportunityRadar({ radar }) {
         ))}
 
         {activeNodes.map((o) => (
-          <div key={o.key} className={`radar-node radar-node--active${selectedKey === o.key ? ' radar-node--selected' : ''}`} style={{ left: `${o.pos.x}%`, top: `${o.pos.y}%` }}>
+          <div
+            key={o.key}
+            className={`radar-node radar-node--active${selectedKey === o.key ? ' radar-node--selected' : ''}`}
+            style={{ left: `${o.pos.x}%`, top: `${o.pos.y}%` }}
+            data-chew-node={`opportunity:${o.realId}`}
+          >
             <button type="button" className="radar-node-label radar-node-label--button" onClick={() => selectNode(o)} aria-pressed={selectedKey === o.key}>
               {o.title}
             </button>
-            {o.href && <Link href={o.href} className="radar-node-link">Take a look</Link>}
           </div>
         ))}
 
@@ -123,7 +121,7 @@ export default function OpportunityRadar({ radar }) {
             key={e.key}
             className={`radar-node radar-node--unlocked${selectedKey === e.key ? ' radar-node--selected' : ''}`}
             style={{ left: `${e.pos.x}%`, top: `${e.pos.y}%` }}
-            data-chew-node={`opportunity:${e.entityId}`}
+            data-chew-node={`opportunity:${e.realId}`}
           >
             <span className="radar-node-badge">OPPORTUNITY UNLOCKED</span>
             <button type="button" className="radar-node-label radar-node-label--button" onClick={() => selectNode(e)} aria-pressed={selectedKey === e.key}>
@@ -149,7 +147,7 @@ export default function OpportunityRadar({ radar }) {
           </p>
         )}
         {unlockedNodes.map((e) => (
-          <div key={`m-${e.key}`} className="radar-mobile-card radar-mobile-card--unlocked" data-chew-node={`opportunity:${e.entityId}`}>
+          <div key={`m-${e.key}`} className="radar-mobile-card radar-mobile-card--unlocked" data-chew-node={`opportunity:${e.realId}`}>
             <span className="radar-node-badge">OPPORTUNITY UNLOCKED</span>
             <button type="button" className="radar-mobile-card-button" onClick={() => selectNode(e)} aria-pressed={selectedKey === e.key}>
               <strong>{e.title}</strong>
@@ -157,7 +155,7 @@ export default function OpportunityRadar({ radar }) {
           </div>
         ))}
         {activeNodes.map((o) => (
-          <div key={`m-${o.key}`} className="radar-mobile-card radar-mobile-card--active">
+          <div key={`m-${o.key}`} className="radar-mobile-card radar-mobile-card--active" data-chew-node={`opportunity:${o.realId}`}>
             <button type="button" className="radar-mobile-card-button" onClick={() => selectNode(o)} aria-pressed={selectedKey === o.key}>
               <strong>{o.title}</strong>
             </button>
@@ -172,13 +170,17 @@ export default function OpportunityRadar({ radar }) {
         )}
       </div>
 
-      {activeNodes.map((o, i) => (
-        <p key={`detail-${i}`} className="text-faint" style={{ fontSize: '0.83rem', margin: i === 0 ? '4px 0 2px' : '2px 0' }}>
-          <strong style={{ color: 'var(--text)' }}>{o.title}: </strong>{o.body}
+      {/* One shared detail-rendering shape now that both kinds carry the
+          same real fields (title/whatImproved/suggestedAction) off the
+          same persisted row. */}
+      {activeNodes.map((o) => (
+        <p key={`detail-${o.key}`} className="text-faint" style={{ fontSize: '0.83rem', margin: '2px 0' }}>
+          <strong style={{ color: 'var(--text)' }}>{o.title}: </strong>{o.whatImproved}
+          {o.suggestedAction && <> — <strong>Next: </strong>{o.suggestedAction}</>}
         </p>
       ))}
       {unlockedNodes.map((e) => (
-        <p key={`unlocked-detail-${e.id}`} className="text-faint" style={{ fontSize: '0.83rem', margin: '2px 0' }}>
+        <p key={`detail-${e.key}`} className="text-faint" style={{ fontSize: '0.83rem', margin: '2px 0' }}>
           <strong style={{ color: 'var(--success)' }}>{e.title}: </strong>{e.whatImproved}
           {e.suggestedAction && <> — <strong>Next: </strong>{e.suggestedAction}</>}
         </p>
