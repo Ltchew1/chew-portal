@@ -1807,9 +1807,20 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
   animation: reveal-rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .radar-node-label { font-size: 0.8rem; font-weight: 600; line-height: 1.25; }
+/* A real node's label doubles as its Cross-System Focus Mode trigger
+   (OpportunityRadar.js's selectNode) — styled to read identically to
+   the plain-text version it replaces, not like a generic button. */
+.radar-node-label--button { background: none; border: none; padding: 0; margin: 0; color: inherit; font: inherit; cursor: pointer; text-align: center; }
+.radar-node-label--button:hover { color: var(--gold-light); }
+.radar-node-label--button:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 2px; border-radius: 4px; }
 .radar-node-sub { font-size: 0.66rem; color: var(--text-faintest); }
 .radar-node-link { font-size: 0.74rem; font-weight: 600; }
 .radar-node--active { border-color: rgba(74,155,110,0.4); box-shadow: 0 0 14px rgba(74,155,110,0.14); }
+/* A member's own selection (local, visual-only state — separate from
+   Cross-System Focus Mode's dim/highlight, which a *different* source
+   could still be driving) — a steady gold ring, not a second glow
+   language. */
+.radar-node--selected { box-shadow: 0 0 0 1px var(--gold-light), 0 0 18px rgba(201,162,39,0.22); }
 /* A separate entrance animation, not just an `opacity` override — the
    base .radar-node's reveal-rise animation computes its own opacity:1
    on completion (animated properties win over the cascade), so a plain
@@ -1843,9 +1854,10 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
   color: var(--text-faint);
 }
 
-/* Mobile — plain stacked cards, no spatial layout at all: this
-   component has no interactivity either way, so there's nothing a
-   shrunk diagram would preserve that a stack doesn't already show. */
+/* Mobile — plain stacked cards, no spatial layout at all: there's
+   nothing a shrunk diagram would preserve that a stack doesn't already
+   show. Selection (OpportunityRadar.js's selectNode) still works here,
+   via a plain full-width button standing in for the desktop label. */
 @media (max-width: 640px) {
   .radar-stage--desktop { display: none; }
   .radar-stage--mobile { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
@@ -1857,6 +1869,8 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
     animation: reveal-rise 0.4s ease both;
   }
   .radar-mobile-card strong { display: block; font-size: 0.88rem; margin-top: 2px; }
+  .radar-mobile-card-button { background: none; border: none; padding: 0; margin: 0; width: 100%; text-align: left; color: inherit; font: inherit; cursor: pointer; }
+  .radar-mobile-card-button:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 2px; border-radius: 4px; }
   .radar-mobile-card--active { border-color: rgba(74,155,110,0.4); }
   .radar-mobile-card--unlocked {
     border-color: var(--success);
@@ -1911,6 +1925,48 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
 .today-bg.chew-focus-active [data-chew-focus-target].chew-focus-highlight {
   opacity: 1;
   filter: none;
+}
+
+/* Level 2/3 — node and edge precision, the exact-object half of Cross-
+   System Focus Mode (same mechanism, deeper real data — see
+   FocusController.js's header comment on the three depths). Nothing
+   here changes color or adds motion: a thin gold outline on the exact
+   target, a shade of extra dimness on its untargeted siblings, a
+   brightened stroke on the one real connecting edge — "precision
+   targeting, not nightclub lighting." */
+.chew-focus-node-highlight {
+  outline: 1px solid var(--gold-light);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+/* filter, never opacity: several real node types (.life-map-subnode,
+   .radar-node) carry their own entrance `animation: reveal-rise ...
+   both`, which computes its own opacity:1 on completion — an animated
+   property always wins over a static cascade rule for the same
+   element, so a plain `opacity: 0.6` here would be silently clobbered
+   the moment that entrance animation settles (the exact bug already
+   documented once for .radar-node--dormant). Filter is untouched by
+   that animation, so it's a safe channel for a second, independent
+   dimming signal. Found by computed-style inspection after the
+   animation settled, not by reading the CSS — the same discipline that
+   caught the original opacity-dormant bug. */
+[data-chew-node].chew-focus-node-soften {
+  filter: brightness(0.7) saturate(0.75);
+  transition: filter 0.35s ease;
+}
+/* THE CHEW MOVE stays the permanent strategic center (see
+   ChewMoveCard.js's file header) — it can still be a real highlight
+   TARGET (an outline) when another source names its exact id, but it
+   never dims just because focus is elsewhere. */
+.chew-move-card.chew-focus-node-soften { opacity: 1; }
+/* Life Map's connecting lines (SVG <line>) — two classes deep to sit
+   safely above the existing .life-map-edge--chain.life-map-edge--X
+   compound rules regardless of which applies; only the one real edge
+   whose both endpoints are the current node targets ever matches. */
+.today-bg .chew-focus-edge-highlight {
+  stroke: var(--gold-light);
+  stroke-width: 0.9;
+  opacity: 1;
 }
 
 /* Standard visually-hidden pattern — used by FocusController's aria-live

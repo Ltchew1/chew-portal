@@ -41,24 +41,30 @@ function DissolveCard({ event, crossSystemDomino }) {
   const [open, setOpen] = useState(false);
   const isBarrier = event.eventType === 'barrier_cleared';
   const showDomino = isBarrier && crossSystemDomino?.active;
+  const ownNodeId = `${event.entityType}:${event.entityId}`;
 
   // Cross-System Focus Mode — the system this event itself lives on,
   // plus (only for the barrier that actually triggered it) the same
   // crossSystemDomino.affected map the "Domino effect" chips above
-  // already render as text. Never independently re-detected.
+  // already render as text. Never independently re-detected. Node-level:
+  // this event's own real row, plus — only when a real co-occurrence was
+  // already established — the exact other rows involved
+  // (event.coOccurringNodeIds, precomputed server-side by page.js via
+  // lib/portalReactions.js's coOccurringNodeIds; never re-derived here).
   const focusSystems = { [OWN_SYSTEM[event.eventType]]: true, ...(showDomino ? crossSystemDomino.affected : {}) };
+  const focusNodeIds = [ownNodeId, ...(showDomino ? event.coOccurringNodeIds ?? [] : [])];
 
   function toggleWhy() {
     setOpen((wasOpen) => {
       const willOpen = !wasOpen;
-      if (willOpen) setFocus(event.id, focusSystems);
+      if (willOpen) setFocus(event.id, focusSystems, { nodeIds: focusNodeIds, label: event.title });
       else clearFocus(event.id);
       return willOpen;
     });
   }
 
   return (
-    <div className="dissolve-card">
+    <div className="dissolve-card" data-chew-node={ownNodeId}>
       <div className="dissolve-stage">
         <span className={`dissolve-node ${isBarrier ? 'dissolve-node--barrier' : 'dissolve-node--locked'}`}>
           {isBarrier ? event.title : 'Locked'}

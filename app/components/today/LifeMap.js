@@ -140,6 +140,12 @@ function ChainDiagram({ territory }) {
         edges.push({
           key: `${p.id}-${n.id}`, x1: p.pos.x, y1: p.pos.y, x2: n.pos.x, y2: n.pos.y,
           cls: `life-map-edge--chain life-map-edge--${n.kind}`, dissolving, pulsing,
+          // Cross-System Focus Mode's Level 3 — only set when BOTH real
+          // ends have a nodeId (lib/todayIntelligence.js's
+          // buildCreditSubNodes); a chain edge touching the goal/move
+          // tier before either has a real backing row just stays a
+          // plain, never-highlightable line.
+          edgeId: p.nodeId && n.nodeId ? `${p.nodeId}|${n.nodeId}` : null,
         });
       });
     });
@@ -160,6 +166,7 @@ function ChainDiagram({ territory }) {
             <line
               key={e.key} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2}
               className={`life-map-edge ${e.cls}${e.pulsing ? ' life-map-edge--pulse' : ''}`}
+              data-chew-edge={e.edgeId ?? undefined}
             />
           )
         ))}
@@ -169,6 +176,7 @@ function ChainDiagram({ territory }) {
           key={n.id}
           className={`life-map-subnode ${KIND_CLASS[n.kind] ?? ''}${n.dissolving ? ' life-map-subnode--dissolving' : ''}${n.isNew ? ' life-map-subnode--emerging' : ''}`}
           style={{ left: `${n.pos.x}%`, top: `${n.pos.y}%` }}
+          data-chew-node={n.nodeId ?? undefined}
         >
           <span className="life-map-subnode-kind">{n.dissolving ? 'Cleared' : KIND_LABEL[n.kind]}</span>
           <span className="life-map-subnode-label">{n.label}</span>
@@ -204,6 +212,7 @@ function MobileChain({ territory }) {
               <div
                 key={n.id}
                 className={`life-map-subnode life-map-subnode--mobile ${KIND_CLASS[n.kind] ?? ''}${n.dissolving ? ' life-map-subnode--dissolving' : ''}${n.isNew ? ' life-map-subnode--emerging' : ''}`}
+                data-chew-node={n.nodeId ?? undefined}
               >
                 <span className="life-map-subnode-kind">{n.dissolving ? 'Cleared' : KIND_LABEL[n.kind]}</span>
                 <span className="life-map-subnode-label">{n.label}</span>

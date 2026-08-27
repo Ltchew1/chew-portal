@@ -26,7 +26,7 @@ import { ROOMS } from '../../lib/rooms';
 import { statusFromClerkUser, hasRequiredStatus } from '../../lib/clientStatus';
 import { listFeatures, evaluateFeatureAccess, roomFeatureKey } from '../../lib/features';
 import { reconcileCreditIntelligence } from '../../lib/intelligenceCore';
-import { buildPortalReactions, reactionsFor } from '../../lib/portalReactions';
+import { buildPortalReactions, reactionsFor, coOccurringNodeIds } from '../../lib/portalReactions';
 import {
   timeOfDayGreeting, canSeeRoomIntelligence, buildChangeSummary,
   buildAccountLevelMove, buildLifeMapGraph, buildOpportunityRadar, buildMoveSignals,
@@ -79,6 +79,23 @@ export default async function TodayPage() {
   const moveChanged = !!moveReaction;
   const previousActionText = moveReaction?.explanation?.previousActionText ?? null;
   const moveLevel = moveReaction?.level ?? null;
+  const moveId = creditRoomResult?.recommendation?.id ?? null;
+  // Node-level focus's exact co-occurring rows (Cross-System Focus
+  // Mode) — the same real ids the "Connects to"/"Domino effect" text
+  // already names, resolved to their `${entityType}:${entityId}` nodeId
+  // form instead of a summary count. Gated by crossSystemDomino.active,
+  // the same established boundary those text chips already use.
+  const moveCoOccurringNodeIds = moveChanged && crossSystemDomino.active
+    ? coOccurringNodeIds(dissolveEvents, moveReaction.id)
+    : [];
+  // BarrierDissolve's cards get the same treatment per-event, computed
+  // once here rather than importing lib/portalReactions.js into a
+  // client component (which would drag in lib/todayIntelligence.js's
+  // server-only @clerk/nextjs/server chain).
+  const dissolveEventsWithNodeIds = dissolveEvents.map((e) => ({
+    ...e,
+    coOccurringNodeIds: crossSystemDomino.active ? coOccurringNodeIds(dissolveEvents, e.id) : [],
+  }));
 
   const readyCount = ROOMS.filter((room) => isRoomLive(room.slug) && hasRequiredStatus(status, room.requiredStatus)).length;
   // Only Credit has a real opportunity-detection pipeline today (see
@@ -172,11 +189,13 @@ export default async function TodayPage() {
         level={moveLevel}
         connects={crossSystemDomino}
         handoffDelay={moveChanged && choreographyLikely}
+        moveId={moveId}
+        moveCoOccurringNodeIds={moveCoOccurringNodeIds}
       />
 
       {dissolveEvents.length > 0 && (
         <RevealOnScroll className="today-reveal">
-          <BarrierDissolve events={dissolveEvents} crossSystemDomino={crossSystemDomino} />
+          <BarrierDissolve events={dissolveEventsWithNodeIds} crossSystemDomino={crossSystemDomino} />
         </RevealOnScroll>
       )}
 

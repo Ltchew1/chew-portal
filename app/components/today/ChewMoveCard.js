@@ -116,6 +116,7 @@ function IsolationField({ signals }) {
 export default function ChewMoveCard({
   move, noMoveReason, urgent, signals = [], domino = { steps: [] }, goal = null,
   changed = false, previousActionText = null, level = null, connects = null, handoffDelay = false,
+  moveId = null, moveCoOccurringNodeIds = [],
 }) {
   const [open, setOpen] = useState(false);
 
@@ -150,10 +151,22 @@ export default function ChewMoveCard({
   const focusSystems = { ...domino.affected, ...(changed && connects?.active ? connects.affected : {}) };
   const hasFocusTargets = Object.keys(focusSystems).length > 0;
 
+  // Node-level (Level 2): the move's own real id, its real goal, and —
+  // only on a genuine change that really co-occurred with something else
+  // — the exact other rows involved (page.js precomputed this via
+  // lib/portalReactions.js's coOccurringNodeIds; never independently
+  // re-derived here). Anything without a real backing id is simply
+  // omitted, never invented.
+  const focusNodeIds = [
+    moveId ? `move:${moveId}` : null,
+    goal?.id ? `goal:${goal.id}` : null,
+    ...(changed && connects?.active ? moveCoOccurringNodeIds : []),
+  ].filter(Boolean);
+
   function toggleReasoning() {
     setOpen((wasOpen) => {
       const willOpen = !wasOpen;
-      if (willOpen && hasFocusTargets) setFocus('chewMove', focusSystems);
+      if (willOpen && hasFocusTargets) setFocus('chewMove', focusSystems, { nodeIds: focusNodeIds, label: move.action });
       else clearFocus('chewMove');
       return willOpen;
     });
@@ -163,6 +176,7 @@ export default function ChewMoveCard({
     <div
       className={`chew-move-card${isolated ? ' chew-move-card--isolated' : ''}${changed ? ' chew-move-card--changed' : ''}${levelClass}`}
       style={changed ? { '--chew-move-delay': `${resolveDelay}s` } : undefined}
+      data-chew-node={moveId ? `move:${moveId}` : undefined}
     >
       {isolated && <IsolationField signals={signals} />}
 
