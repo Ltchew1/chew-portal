@@ -336,6 +336,34 @@ CREATE INDEX IF NOT EXISTS idx_opportunities_user_id ON opportunities(user_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_opportunities_active_source_key
   ON opportunities(user_id, source_key) WHERE status = 'active';
 
+-- Opportunity history snapshots — Economic Weather's historical layer.
+-- Each row is a point-in-time capture of a room's canonical, persisted
+-- active opportunity IDs (opportunities.id, the same identity Radar, Life
+-- Map, and opportunity_unlocked events already use — never a title or a
+-- count). `active_ids`/`newly_unlocked_ids` are canonicalized (deduped,
+-- numerically sorted, comma-joined) before being stored so that database
+-- row order or reconciliation-pass array order can never fake a state
+-- change. A new row is only ever inserted when the canonical active_ids
+-- set actually differs from the most recent one for (user_id, room) — see
+-- lib/economicWeather.js's recordOpportunitySnapshotIfChanged, the same
+-- read-then-compare-then-skip discipline as barriers/opportunities/
+-- recommendations. `newly_unlocked_ids` is a transition marker for the
+-- exact pass it was captured on (which opportunity IDs were brand new,
+-- per the same isNew signal transitions.js uses for opportunity_unlocked
+-- events) — never a permanent status on the opportunity itself.
+CREATE TABLE IF NOT EXISTS opportunity_history_snapshots (
+  id                    BIGSERIAL PRIMARY KEY,
+  user_id               BIGINT NOT NULL REFERENCES users(id),
+  room                  TEXT NOT NULL,
+  active_ids            TEXT NOT NULL DEFAULT '',
+  newly_unlocked_ids    TEXT NOT NULL DEFAULT '',
+  active_count          INT NOT NULL DEFAULT 0,
+  captured_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_opportunity_history_snapshots_lookup
+  ON opportunity_history_snapshots(user_id, room, captured_at DESC);
+
 -- Recommendation history — every Next Best Move CHEW has shown is kept,
 -- not overwritten, so a client can inspect "why did CHEW tell me that" and
 -- see it change over time. `observed` is the plain-English list of what

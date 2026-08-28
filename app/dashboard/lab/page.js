@@ -34,6 +34,8 @@ import { reconcileHomeIntelligence } from '../../../lib/intelligenceCore';
 import { listRecentNotifications } from '../../../lib/notifications';
 import NotificationsPanel from '../../components/lab/NotificationsPanel';
 import { listFeatures, evaluateFeatureAccess, roomFeatureKey } from '../../../lib/features';
+import { getCreditOpportunityWeather } from '../../../lib/economicWeather';
+import EconomicWeatherCard from '../../components/lab/EconomicWeatherCard';
 
 const STATUS_LABELS = { applicant: 'Applicant', accepted: 'Accepted', paid: 'Paid' };
 
@@ -101,10 +103,11 @@ export default async function LabHubPage({ searchParams }) {
   }
 
   const firstName = user.firstName || 'there';
-  const [homeIntelligence, notifications, features] = await Promise.all([
+  const [homeIntelligence, notifications, features, creditOpportunityWeather] = await Promise.all([
     reconcileHomeIntelligence(user.id),
     listRecentNotifications(user.id, 6),
     listFeatures(),
+    getCreditOpportunityWeather(user.id),
   ]);
   // The feature registry (lib/features.js) is the one source of truth for
   // "is this room actually released," not a static built:true/false flag —
@@ -159,6 +162,7 @@ export default async function LabHubPage({ searchParams }) {
           {homeIntelligence.rooms.map((roomIntel) => (
             <HomeIntelligence key={roomIntel.room} intelligence={roomIntel} />
           ))}
+          <EconomicWeatherCard weather={creditOpportunityWeather} />
           <Link href="/dashboard/lab/war-room" className="btn btn-outline btn-sm" style={{ marginBottom: '8px' }}>
             Open My War Room <IconChevronRight />
           </Link>

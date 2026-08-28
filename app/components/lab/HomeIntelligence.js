@@ -65,7 +65,7 @@ function BarrierCard({ barrier }) {
 }
 
 export default function HomeIntelligence({ intelligence }) {
-  const { planStatus, nextBestMove, chewNoticed, whatChanged, opportunities, activeBarriers, recommendation } = intelligence;
+  const { planStatus, nextBestMove, chewNoticed, whatChanged, activeOpportunities, activeBarriers, recommendation } = intelligence;
 
   return (
     <>
@@ -113,14 +113,14 @@ export default function HomeIntelligence({ intelligence }) {
         </div>
       )}
 
-      {opportunities.length > 0 && (
+      {activeOpportunities?.length > 0 && (
         <div className="card" style={{ marginBottom: '20px' }}>
           <h3 style={{ marginBottom: '10px' }}>Opportunities</h3>
-          {opportunities.map((o, i) => (
-            <div key={i} style={{ marginBottom: i < opportunities.length - 1 ? '12px' : 0 }}>
+          {activeOpportunities.map((o, i) => (
+            <div key={o.id} style={{ marginBottom: i < activeOpportunities.length - 1 ? '12px' : 0 }}>
               <strong style={{ fontSize: '0.9rem' }}>{o.title}</strong>
               <p className="text-faint" style={{ fontSize: '0.85rem', margin: '4px 0 0' }}>
-                {o.body} {o.href && <Link href={o.href}>Take a look</Link>}
+                {o.whatImproved} {o.suggestedAction && <><strong>Next: </strong>{o.suggestedAction}</>}
               </p>
             </div>
           ))}
