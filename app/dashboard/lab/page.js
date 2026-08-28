@@ -109,6 +109,13 @@ export default async function LabHubPage({ searchParams }) {
     listFeatures(),
     getCreditOpportunityWeather(user.id),
   ]);
+  // Only ever true on the exact reconciliation pass that just wrote a new
+  // opportunity-history snapshot for a real prior-vs-current comparison —
+  // gates EconomicWeatherCard's entrance/recede motion so it never
+  // replays the transition ceremony on an ordinary revisit (see
+  // lib/intelligenceCore.js's opportunityHistoryChanged comment).
+  const creditWeatherJustChanged = !!homeIntelligence.rooms.find((r) => r.room === 'credit')?.opportunityHistoryChanged;
+
   // The feature registry (lib/features.js) is the one source of truth for
   // "is this room actually released," not a static built:true/false flag —
   // same access decision Ask CHEW and each room's own placeholder now make
@@ -162,7 +169,7 @@ export default async function LabHubPage({ searchParams }) {
           {homeIntelligence.rooms.map((roomIntel) => (
             <HomeIntelligence key={roomIntel.room} intelligence={roomIntel} />
           ))}
-          <EconomicWeatherCard weather={creditOpportunityWeather} />
+          <EconomicWeatherCard weather={creditOpportunityWeather} justChanged={creditWeatherJustChanged} />
           <Link href="/dashboard/lab/war-room" className="btn btn-outline btn-sm" style={{ marginBottom: '8px' }}>
             Open My War Room <IconChevronRight />
           </Link>
