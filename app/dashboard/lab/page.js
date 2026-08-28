@@ -36,6 +36,8 @@ import NotificationsPanel from '../../components/lab/NotificationsPanel';
 import { listFeatures, evaluateFeatureAccess, roomFeatureKey } from '../../../lib/features';
 import { getCreditOpportunityWeather } from '../../../lib/economicWeather';
 import EconomicWeatherCard from '../../components/lab/EconomicWeatherCard';
+import { getCreditFrictionHistory } from '../../../lib/frictionHistory';
+import FrictionTimelineCard from '../../components/lab/FrictionTimelineCard';
 
 const STATUS_LABELS = { applicant: 'Applicant', accepted: 'Accepted', paid: 'Paid' };
 
@@ -103,18 +105,23 @@ export default async function LabHubPage({ searchParams }) {
   }
 
   const firstName = user.firstName || 'there';
-  const [homeIntelligence, notifications, features, creditOpportunityWeather] = await Promise.all([
+  const [homeIntelligence, notifications, features, creditOpportunityWeather, creditFrictionHistory] = await Promise.all([
     reconcileHomeIntelligence(user.id),
     listRecentNotifications(user.id, 6),
     listFeatures(),
     getCreditOpportunityWeather(user.id),
+    getCreditFrictionHistory(user.id),
   ]);
+  const creditRoomIntel = homeIntelligence.rooms.find((r) => r.room === 'credit');
   // Only ever true on the exact reconciliation pass that just wrote a new
-  // opportunity-history snapshot for a real prior-vs-current comparison —
-  // gates EconomicWeatherCard's entrance/recede motion so it never
-  // replays the transition ceremony on an ordinary revisit (see
-  // lib/intelligenceCore.js's opportunityHistoryChanged comment).
-  const creditWeatherJustChanged = !!homeIntelligence.rooms.find((r) => r.room === 'credit')?.opportunityHistoryChanged;
+  // opportunity/barrier-history snapshot for a real prior-vs-current
+  // comparison — gates each card's entrance/recede/pulse motion so it
+  // never replays the transition ceremony on an ordinary revisit (see
+  // lib/intelligenceCore.js's opportunityHistoryChanged/
+  // barrierHistoryChanged comments).
+  const creditWeatherJustChanged = !!creditRoomIntel?.opportunityHistoryChanged;
+  const creditFrictionJustChanged = !!creditRoomIntel?.barrierHistoryChanged;
+  const creditActiveBarriers = creditRoomIntel?.activeBarriers ?? [];
 
   // The feature registry (lib/features.js) is the one source of truth for
   // "is this room actually released," not a static built:true/false flag —
@@ -170,6 +177,7 @@ export default async function LabHubPage({ searchParams }) {
             <HomeIntelligence key={roomIntel.room} intelligence={roomIntel} />
           ))}
           <EconomicWeatherCard weather={creditOpportunityWeather} justChanged={creditWeatherJustChanged} />
+          <FrictionTimelineCard friction={creditFrictionHistory} activeBarriers={creditActiveBarriers} justChanged={creditFrictionJustChanged} />
           <Link href="/dashboard/lab/war-room" className="btn btn-outline btn-sm" style={{ marginBottom: '8px' }}>
             Open My War Room <IconChevronRight />
           </Link>

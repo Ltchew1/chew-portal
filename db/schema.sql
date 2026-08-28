@@ -364,6 +364,29 @@ CREATE TABLE IF NOT EXISTS opportunity_history_snapshots (
 CREATE INDEX IF NOT EXISTS idx_opportunity_history_snapshots_lookup
   ON opportunity_history_snapshots(user_id, room, captured_at DESC);
 
+-- Barrier history snapshots — Friction History's historical layer, the
+-- same architecture as opportunity_history_snapshots above (see that
+-- table's comment for the canonicalization/dedup reasoning, identical
+-- here) applied to barriers.id instead of opportunities.id. A barrier
+-- with no counterpart "streak" column on purpose — how many consecutive
+-- snapshots a given barrier ID has survived is derived by walking these
+-- rows backwards (see lib/frictionHistory.js's computePersistenceStreaks),
+-- never a separately stored counter that could drift from the real rows
+-- it's summarizing. `newly_detected_ids` mirrors newly_unlocked_ids's
+-- one-shot-per-transition role, named for barrier vocabulary.
+CREATE TABLE IF NOT EXISTS barrier_history_snapshots (
+  id                    BIGSERIAL PRIMARY KEY,
+  user_id               BIGINT NOT NULL REFERENCES users(id),
+  room                  TEXT NOT NULL,
+  active_ids            TEXT NOT NULL DEFAULT '',
+  newly_detected_ids    TEXT NOT NULL DEFAULT '',
+  active_count          INT NOT NULL DEFAULT 0,
+  captured_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_barrier_history_snapshots_lookup
+  ON barrier_history_snapshots(user_id, room, captured_at DESC);
+
 -- Recommendation history — every Next Best Move CHEW has shown is kept,
 -- not overwritten, so a client can inspect "why did CHEW tell me that" and
 -- see it change over time. `observed` is the plain-English list of what

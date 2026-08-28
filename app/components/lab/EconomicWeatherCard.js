@@ -107,7 +107,11 @@ export default function EconomicWeatherCard({ weather, justChanged = false }) {
       <WeatherField currentCount={currentCount} addedCount={addedCount} removedCount={removedCount} justChanged={justChanged} />
 
       {trend && (
-        <div className={`weather-trend weather-trend--${trend === 'consistently_expanding' ? 'up' : 'down'}`}>
+        <div className={[
+          'weather-trend',
+          trend === 'consistently_expanding' ? 'weather-trend--rising' : 'weather-trend--falling',
+          trend === 'consistently_expanding' ? 'weather-trend--good' : 'weather-trend--bad',
+        ].join(' ')}>
           <span className="weather-trend-arrow" />
           {TREND_LABEL[trend]}
         </div>
