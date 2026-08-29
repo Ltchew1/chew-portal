@@ -381,6 +381,17 @@ export default function LetterGenerator({ attestedItems, pastLetters }) {
                     <option key={key} value={key}>{label}</option>
                   ))}
                 </select>
+                {(failureReason === 'no_response' || failureReason === 'furnisher_ignored') && (
+                  <p className="text-faint" style={{ fontSize: '0.78rem', marginTop: '6px' }}>
+                    This needs a mailed date logged in your Dispute Tracker at least 30 days ago — CHEW won&apos;t
+                    state a timeframe you haven&apos;t actually confirmed.
+                  </p>
+                )}
+                {failureReason === 'verified_without_explanation' && (
+                  <p className="text-faint" style={{ fontSize: '0.78rem', marginTop: '6px' }}>
+                    This needs a response logged as &quot;Verified&quot; in your Dispute Tracker first.
+                  </p>
+                )}
               </div>
               <div className="field">
                 <label htmlFor="failure-detail">Anything else worth including? (optional)</label>
