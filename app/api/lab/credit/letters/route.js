@@ -136,7 +136,7 @@ export async function POST(req) {
       const status = err.code === 'NOT_FOUND' ? 404 : 409;
       return NextResponse.json({ error: err.message }, { status });
     }
-    if (err.message?.startsWith('All items') || err.message?.startsWith('A mailing address') || err.message?.startsWith('Some items') || err.message?.startsWith('This letter could not be generated')) {
+    if (err.message?.startsWith('All items') || err.message?.startsWith('A mailing address') || err.message?.startsWith('Some items') || err.message?.startsWith('This letter could not be generated') || err.message?.startsWith('A letter has already been generated')) {
       return NextResponse.json({ error: err.message }, { status: 400 });
     }
     throw err;

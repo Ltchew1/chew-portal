@@ -250,7 +250,9 @@ export default function LetterGenerator({ attestedItems, pastLetters }) {
               No attested items yet. Flag and attest an item first.
             </p>
           )}
-          {[...byBureau.entries()].map(([bureau, items]) => (
+          {[...byBureau.entries()].map(([bureau, items]) => {
+            const recipientTypeForBureau = PRIMARY_BUREAUS.includes(bureau) ? 'bureau' : 'secondary_bureau';
+            return (
             <div key={bureau} style={{ marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid var(--divider)' }}>
               <strong style={{ display: 'block', marginBottom: '8px' }}>
                 {BUREAU_LABELS[bureau]}
@@ -258,26 +260,36 @@ export default function LetterGenerator({ attestedItems, pastLetters }) {
                   <span className="badge badge-neutral" style={{ marginLeft: '8px' }}>Secondary bureau</span>
                 )}
               </strong>
-              {items.map((item) => (
-                <label key={item.id} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', fontSize: '0.85rem', marginBottom: '6px' }}>
-                  <input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => toggleId(item.id)} style={{ marginTop: '3px' }} />
-                  <span>
-                    {item.creditor_name}
-                    <span className="text-faint"> — {REASON_LABELS[item.reason]}{item.status === 'letter_generated' ? ' · letter already generated for this item' : ''}</span>
-                  </span>
-                </label>
-              ))}
+              {items.map((item) => {
+                const alreadyLettered = item.usedRecipientTypes?.includes(recipientTypeForBureau);
+                return (
+                  <label key={item.id} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', fontSize: '0.85rem', marginBottom: '6px', opacity: alreadyLettered ? 0.6 : 1 }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(item.id)}
+                      onChange={() => toggleId(item.id)}
+                      disabled={alreadyLettered}
+                      style={{ marginTop: '3px' }}
+                    />
+                    <span>
+                      {item.creditor_name}
+                      <span className="text-faint"> — {REASON_LABELS[item.reason]}{alreadyLettered ? ' · a letter has already been sent to this bureau for this item' : ''}</span>
+                    </span>
+                  </label>
+                );
+              })}
               <button
                 type="button"
                 className="btn btn-gold btn-sm"
                 style={{ marginTop: '8px' }}
                 disabled={generating || selectedIds.length === 0 || !selectedIds.every((id) => items.some((i) => i.id === id))}
-                onClick={() => handleGenerateDispute(PRIMARY_BUREAUS.includes(bureau) ? 'bureau' : 'secondary_bureau')}
+                onClick={() => handleGenerateDispute(recipientTypeForBureau)}
               >
                 {generating ? 'Generating…' : `Generate letter to ${BUREAU_LABELS[bureau]}`}
               </button>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -293,12 +305,24 @@ export default function LetterGenerator({ attestedItems, pastLetters }) {
           {[...byCreditor.entries()].map(([creditor, items]) => (
             <div key={creditor} style={{ marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid var(--divider)' }}>
               <strong style={{ display: 'block', marginBottom: '8px' }}>{creditor}</strong>
-              {items.map((item) => (
-                <label key={item.id} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', fontSize: '0.85rem', marginBottom: '6px' }}>
-                  <input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => toggleId(item.id)} style={{ marginTop: '3px' }} />
-                  <span>{BUREAU_LABELS[item.bureau]} · {REASON_LABELS[item.reason]}</span>
-                </label>
-              ))}
+              {items.map((item) => {
+                const alreadyLettered = item.usedRecipientTypes?.includes('furnisher');
+                return (
+                  <label key={item.id} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', fontSize: '0.85rem', marginBottom: '6px', opacity: alreadyLettered ? 0.6 : 1 }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(item.id)}
+                      onChange={() => toggleId(item.id)}
+                      disabled={alreadyLettered}
+                      style={{ marginTop: '3px' }}
+                    />
+                    <span>
+                      {BUREAU_LABELS[item.bureau]} · {REASON_LABELS[item.reason]}
+                      {alreadyLettered && <span className="text-faint"> · a letter has already been sent to this creditor for this item</span>}
+                    </span>
+                  </label>
+                );
+              })}
               {selectedIds.some((id) => items.some((i) => i.id === id)) && (
                 <div style={{ marginTop: '10px' }}>
                   <div className="field">
