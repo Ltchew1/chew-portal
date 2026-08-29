@@ -38,6 +38,7 @@ import { getCreditOpportunityWeather } from '../../../lib/economicWeather';
 import EconomicWeatherCard from '../../components/lab/EconomicWeatherCard';
 import { getCreditFrictionHistory } from '../../../lib/frictionHistory';
 import FrictionTimelineCard from '../../components/lab/FrictionTimelineCard';
+import HiddenLeverageCard from '../../components/lab/HiddenLeverageCard';
 
 const STATUS_LABELS = { applicant: 'Applicant', accepted: 'Accepted', paid: 'Paid' };
 
@@ -122,6 +123,7 @@ export default async function LabHubPage({ searchParams }) {
   const creditWeatherJustChanged = !!creditRoomIntel?.opportunityHistoryChanged;
   const creditFrictionJustChanged = !!creditRoomIntel?.barrierHistoryChanged;
   const creditActiveBarriers = creditRoomIntel?.activeBarriers ?? [];
+  const creditUndownloadedLetters = creditRoomIntel?.undownloadedLetters ?? [];
 
   // The feature registry (lib/features.js) is the one source of truth for
   // "is this room actually released," not a static built:true/false flag —
@@ -178,6 +180,7 @@ export default async function LabHubPage({ searchParams }) {
           ))}
           <EconomicWeatherCard weather={creditOpportunityWeather} justChanged={creditWeatherJustChanged} />
           <FrictionTimelineCard friction={creditFrictionHistory} activeBarriers={creditActiveBarriers} justChanged={creditFrictionJustChanged} />
+          <HiddenLeverageCard letters={creditUndownloadedLetters} />
           <Link href="/dashboard/lab/war-room" className="btn btn-outline btn-sm" style={{ marginBottom: '8px' }}>
             Open My War Room <IconChevronRight />
           </Link>

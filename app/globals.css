@@ -775,6 +775,25 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
 .friction-isolate-title { font-size: 0.92rem; }
 .friction-isolate-count { font-size: 0.8rem; color: var(--text-faint); }
 
+/* Hidden Leverage — a real, already-created resource, not a status
+   signal like Weather/Friction, so no badge/timeline/glow language here.
+   Reuses the shared reveal-rise entrance token (see its other users
+   below) rather than a bespoke keyframe — one motion language, not a
+   new one per card. */
+.leverage-card--entering { animation: reveal-rise 0.5s cubic-bezier(0.16,1,0.3,1) both; }
+.leverage-list { display: grid; gap: 10px; margin: 4px 0 12px; }
+.leverage-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 12px;
+  background: var(--black-elev);
+  border-radius: var(--radius-sm);
+  flex-wrap: wrap;
+}
+.leverage-item-title { display: block; font-size: 0.9rem; }
+.leverage-item-meta { display: block; font-size: 0.78rem; color: var(--text-faint); margin-top: 2px; }
+.leverage-item-error { flex-basis: 100%; margin: 4px 0 0; font-size: 0.78rem; color: var(--danger); }
+.leverage-disclaimer { font-size: 0.78rem; margin: 0; }
+
 .room-gallery {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
