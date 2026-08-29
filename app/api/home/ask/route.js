@@ -12,13 +12,20 @@ import { routeAskChew, parseScoreTarget } from '../../../../lib/askChew';
 import { setScoreGoal } from '../../../../lib/creditScore';
 import { getFeatureAccess, roomFeatureKey } from '../../../../lib/features';
 import { EXPANSION_LINES } from '../../../../lib/featureCopy';
+import { checkRateLimit, rateLimitExceededBody } from '../../../../lib/rateLimit';
 
 const CREDIT_REQUIRED_STATUS = getRoom('credit').requiredStatus;
+const ASK_RATE_LIMIT = { limit: 60, windowSeconds: 600 };
 
 export async function POST(req) {
   const { user, hasAccess } = await getRoomAccess(LAB_REQUIRED_STATUS);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!hasAccess) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+  const rl = await checkRateLimit({ key: `ask:${user.id}`, ...ASK_RATE_LIMIT });
+  if (!rl.allowed) {
+    return NextResponse.json(rateLimitExceededBody(), { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } });
+  }
 
   let body;
   try {

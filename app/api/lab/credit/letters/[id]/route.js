@@ -51,5 +51,12 @@ export async function GET(req, { params }) {
     await markDownloaded(user.id, letterId);
   }
 
+  // This is a member's own dispute letter — name, address, account
+  // details. Explicit no-store on top of Next's own dynamic-rendering
+  // behavior (this route reads the authenticated session, so it was
+  // never eligible for shared/CDN caching to begin with) covers the
+  // remaining case: a shared/public machine's own browser cache.
+  headers['Cache-Control'] = 'private, no-store';
+
   return new NextResponse(body, { status: 200, headers });
 }

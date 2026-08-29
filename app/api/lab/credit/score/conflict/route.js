@@ -13,13 +13,20 @@ import { NextResponse } from 'next/server';
 import { getRoomAccess } from '../../../../../../lib/clientStatus';
 import { getRoom } from '../../../../../../lib/rooms';
 import { resolveScoreConflict } from '../../../../../../lib/creditScore';
+import { checkRateLimit, rateLimitExceededBody } from '../../../../../../lib/rateLimit';
 
 const CREDIT_REQUIRED_STATUS = getRoom('credit').requiredStatus;
+const RESOLVE_RATE_LIMIT = { limit: 30, windowSeconds: 3600 };
 
 export async function POST(req) {
   const { user, hasAccess } = await getRoomAccess(CREDIT_REQUIRED_STATUS);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!hasAccess) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+  const rl = await checkRateLimit({ key: `score:conflict:${user.id}`, ...RESOLVE_RATE_LIMIT });
+  if (!rl.allowed) {
+    return NextResponse.json(rateLimitExceededBody(), { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } });
+  }
 
   let body;
   try {

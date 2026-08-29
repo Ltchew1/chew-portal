@@ -16,11 +16,16 @@ import {
   generateDisputeLetter, generateEscalationLetter, listLettersForUser,
 } from '../../../../../lib/letters';
 import { ESCALATION_FAILURE_CITATIONS } from '../../../../../lib/fcraCitations';
+import { checkRateLimit, rateLimitExceededBody } from '../../../../../lib/rateLimit';
 
 const CREDIT_REQUIRED_STATUS = getRoom('credit').requiredStatus;
 const DISPUTE_RECIPIENT_TYPES = ['bureau', 'secondary_bureau', 'furnisher'];
 const ESCALATION_RECIPIENT_TYPES = ['cfpb', 'ftc'];
 const STAGE_BY_RECIPIENT_TYPE = { bureau: 1, furnisher: 2, secondary_bureau: 3 };
+// Generating a letter composes real content and (for stages 1-3) renders
+// a PDF — real document-generation work, never something a legitimate
+// member does dozens of times a minute.
+const GENERATE_RATE_LIMIT = { limit: 20, windowSeconds: 3600 };
 
 export async function GET() {
   const { user, hasAccess } = await getRoomAccess(CREDIT_REQUIRED_STATUS);
@@ -35,6 +40,11 @@ export async function POST(req) {
   const { user, hasAccess } = await getRoomAccess(CREDIT_REQUIRED_STATUS);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!hasAccess) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+  const rl = await checkRateLimit({ key: `letters:generate:${user.id}`, ...GENERATE_RATE_LIMIT });
+  if (!rl.allowed) {
+    return NextResponse.json(rateLimitExceededBody(), { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } });
+  }
 
   let body;
   try {

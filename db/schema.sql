@@ -750,3 +750,20 @@ ALTER TABLE provider_handoffs ADD COLUMN IF NOT EXISTS outcome_classification TE
 ALTER TABLE provider_handoffs DROP CONSTRAINT IF EXISTS provider_handoffs_status_check;
 ALTER TABLE provider_handoffs ADD CONSTRAINT provider_handoffs_status_check
   CHECK (status IN ('consent_pending', 'consent_given', 'handed_off', 'outcome_received', 'declined', 'cancelled'));
+
+-- ============================================================================
+-- Rate limiting foundation (see lib/rateLimit.js). Fixed-window counters,
+-- keyed by whatever a route decides identifies the requester (almost always
+-- the authenticated Clerk user id — never a client-supplied value). Backed
+-- by Postgres rather than in-process memory because this app runs as
+-- independent serverless function instances with no shared memory between
+-- them; Postgres is the one piece of shared infrastructure already
+-- provisioned, so this introduces no new vendor or deployment decision.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS rate_limit_hits (
+  bucket_key    TEXT NOT NULL,
+  window_start  TIMESTAMPTZ NOT NULL,
+  count         INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (bucket_key, window_start)
+);
+CREATE INDEX IF NOT EXISTS idx_rate_limit_hits_window_start ON rate_limit_hits(window_start);

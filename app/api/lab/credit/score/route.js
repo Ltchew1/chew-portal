@@ -13,9 +13,11 @@ import {
   detectScoreConflicts, describeScoreConflict,
 } from '../../../../../lib/creditScore';
 import { describeFact, describeConflictState } from '../../../../../lib/factProvenance';
+import { checkRateLimit, rateLimitExceededBody } from '../../../../../lib/rateLimit';
 
 const CREDIT_REQUIRED_STATUS = getRoom('credit').requiredStatus;
 const VALID_BUREAUS = ['equifax', 'experian', 'transunion', 'overall'];
+const LOG_SCORE_RATE_LIMIT = { limit: 30, windowSeconds: 3600 };
 
 export async function GET() {
   const { user, hasAccess } = await getRoomAccess(CREDIT_REQUIRED_STATUS);
@@ -38,13 +40,24 @@ export async function GET() {
   const conflicts = detectScoreConflicts(snapshots);
   const scoreConflict = describeConflictState(conflicts);
   const scoreConflictDetail = conflicts.length > 0 ? describeScoreConflict(conflicts[0]) : null;
-  return NextResponse.json({ snapshots, goal, scoreProvenance, scoreConflict, scoreConflictDetail });
+  // Score history is financial PII — explicit no-store on top of Next's
+  // own dynamic-rendering behavior (this route reads the authenticated
+  // session), same reasoning as the letter-download route.
+  return NextResponse.json(
+    { snapshots, goal, scoreProvenance, scoreConflict, scoreConflictDetail },
+    { headers: { 'Cache-Control': 'private, no-store' } }
+  );
 }
 
 export async function POST(req) {
   const { user, hasAccess } = await getRoomAccess(CREDIT_REQUIRED_STATUS);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!hasAccess) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+  const rl = await checkRateLimit({ key: `score:log:${user.id}`, ...LOG_SCORE_RATE_LIMIT });
+  if (!rl.allowed) {
+    return NextResponse.json(rateLimitExceededBody(), { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } });
+  }
 
   let body;
   try {
