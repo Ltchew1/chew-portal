@@ -133,6 +133,16 @@ ALTER TABLE generated_letters ADD COLUMN IF NOT EXISTS fcra_citation TEXT;
 -- prior failure, per the constitution. Not a tracker; just this letter's
 -- own record of why it exists.
 ALTER TABLE generated_letters ADD COLUMN IF NOT EXISTS escalation_notes TEXT;
+-- Letter Quality Supremacy pass: the same content composeDisputeLetter/
+-- composeEscalationNarrative always produced, now also captured as
+-- structured sections (sender/recipient blocks, subject, salutation,
+-- opening, itemized entries, legal paragraph, closing, signature) instead
+-- of only a flat string — this is what lib/letterPdf.js lays out with
+-- real typographic hierarchy. `content` (the flat string) is kept
+-- unchanged as the plain-text record/on-screen preview; this column is
+-- additive, nullable, and only ever populated at generation time — never
+-- backfilled or edited after the fact, same immutability rule as content.
+ALTER TABLE generated_letters ADD COLUMN IF NOT EXISTS structured_content JSONB;
 
 -- Which dispute items a given letter covers (a letter can bundle multiple
 -- items to the same bureau).

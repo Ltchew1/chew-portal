@@ -1,15 +1,23 @@
 // app/api/lab/credit/letters/[id]/route.js
 //
-// Fetches one previously generated letter (for re-download) and stamps
-// downloaded_at the first time it's actually retrieved for that purpose.
-// Read-only otherwise — there is no PUT/PATCH here; a letter's content
-// never changes after it's generated, it's the record of what was
-// actually produced.
+// The one canonical download path for a generated letter — used both by
+// LetterGenerator.js (a just-generated letter) and HiddenLeverageCard.js
+// (a past, undownloaded one). Always returns the real file: a genuine
+// PDF (lib/letterPdf.js) for a stage 1-3 mailed dispute letter, plain
+// text for a Stage 4 CFPB/FTC complaint narrative (meant to be copied
+// into their own web form, not mailed — see letterContent.js) or for a
+// legacy letter generated before structured_content existed.
+//
+// ORDER MATTERS: the file body is built FIRST; downloaded_at is only
+// ever stamped after that succeeds. If PDF rendering throws, the client
+// gets a real error and the letter is correctly NOT marked downloaded —
+// CHEW never records "delivered" for a delivery that didn't happen.
 
 import { NextResponse } from 'next/server';
 import { getRoomAccess } from '../../../../../../lib/clientStatus';
 import { getRoom } from '../../../../../../lib/rooms';
 import { getOwnedLetter, markDownloaded } from '../../../../../../lib/letters';
+import { renderDisputeLetterPdf } from '../../../../../../lib/letterPdf';
 
 const CREDIT_REQUIRED_STATUS = getRoom('credit').requiredStatus;
 
@@ -28,10 +36,20 @@ export async function GET(req, { params }) {
     return NextResponse.json({ error: 'Letter not found for this account.' }, { status: 404 });
   }
 
+  let body;
+  let headers;
+  if (letter.stage < 4 && letter.structuredContent) {
+    body = await renderDisputeLetterPdf(letter.structuredContent);
+    headers = { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="chew-lab-letter-${letterId}.pdf"` };
+  } else {
+    body = letter.content;
+    headers = { 'Content-Type': 'text/plain; charset=utf-8', 'Content-Disposition': `attachment; filename="chew-lab-letter-${letterId}.txt"` };
+  }
+
   const url = new URL(req.url);
   if (url.searchParams.get('download') === '1') {
     await markDownloaded(user.id, letterId);
   }
 
-  return NextResponse.json({ letter });
+  return new NextResponse(body, { status: 200, headers });
 }

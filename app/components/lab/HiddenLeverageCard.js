@@ -25,8 +25,7 @@ import { useEffect, useState } from 'react';
 
 const STAGE_LABELS = { 1: 'Stage 1 · Bureau', 2: 'Stage 2 · Furnisher', 3: 'Stage 3 · Secondary bureau', 4: 'Stage 4 · Escalation' };
 
-function downloadTextFile(filename, content) {
-  const blob = new Blob([content], { type: 'text/plain' });
+function downloadBlob(filename, blob) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -35,6 +34,13 @@ function downloadTextFile(filename, content) {
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+function filenameFromResponse(res, letterId) {
+  const fromHeader = res.headers.get('content-disposition')?.match(/filename="([^"]+)"/)?.[1];
+  if (fromHeader) return fromHeader;
+  const isPdf = res.headers.get('content-type')?.includes('pdf');
+  return `chew-lab-letter-${letterId}.${isPdf ? 'pdf' : 'txt'}`;
 }
 
 function formatDate(iso) {
@@ -49,8 +55,8 @@ function LetterRow({ letter, onDownloaded }) {
     try {
       const res = await fetch(`/api/lab/credit/letters/${letter.id}?download=1`);
       if (!res.ok) throw new Error('request failed');
-      const { letter: full } = await res.json();
-      downloadTextFile(`chew-lab-letter-${letter.id}.txt`, full.content);
+      const blob = await res.blob();
+      downloadBlob(filenameFromResponse(res, letter.id), blob);
       setState('done');
       onDownloaded(letter.id);
     } catch {
@@ -63,7 +69,7 @@ function LetterRow({ letter, onDownloaded }) {
       <div>
         <strong className="leverage-item-title">{letter.recipientName}</strong>
         <span className="leverage-item-meta">
-          {STAGE_LABELS[letter.stage] ?? `Stage ${letter.stage}`} · Generated {formatDate(letter.generatedAt)}
+          {STAGE_LABELS[letter.stage] ?? `Stage ${letter.stage}`} · Generated {formatDate(letter.generatedAt)} · Ready to download
         </span>
       </div>
       <button

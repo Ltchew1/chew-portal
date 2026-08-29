@@ -38,8 +38,7 @@ function groupBy(items, keyFn) {
   return groups;
 }
 
-function downloadTextFile(filename, content) {
-  const blob = new Blob([content], { type: 'text/plain' });
+function downloadBlob(filename, blob) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -50,13 +49,20 @@ function downloadTextFile(filename, content) {
   URL.revokeObjectURL(url);
 }
 
-function LetterPreview({ letter, onDownload }) {
+function filenameFromResponse(res, letterId) {
+  const fromHeader = res.headers.get('content-disposition')?.match(/filename="([^"]+)"/)?.[1];
+  if (fromHeader) return fromHeader;
+  const isPdf = res.headers.get('content-type')?.includes('pdf');
+  return `chew-lab-letter-${letterId}.${isPdf ? 'pdf' : 'txt'}`;
+}
+
+function LetterPreview({ letter, onDownload, downloading }) {
   return (
     <div className="card" style={{ marginTop: '20px' }}>
       <div className="flex-between" style={{ marginBottom: '12px' }}>
         <h3 style={{ margin: 0 }}>Your letter is ready</h3>
-        <button type="button" className="btn btn-gold btn-glow" onClick={onDownload}>
-          Download
+        <button type="button" className="btn btn-gold btn-glow" onClick={onDownload} disabled={downloading}>
+          {downloading ? 'Downloading…' : 'Download'}
         </button>
       </div>
       <p className="text-faint" style={{ fontSize: '0.82rem', marginBottom: '14px' }}>
@@ -95,6 +101,7 @@ export default function LetterGenerator({ attestedItems, pastLetters }) {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState(null);
   const [letter, setLetter] = useState(null);
+  const [downloading, setDownloading] = useState(false);
 
   const byBureau = groupBy(attestedItems, (i) => i.bureau);
   const byCreditor = groupBy(attestedItems, (i) => i.creditor_name);
@@ -168,15 +175,33 @@ export default function LetterGenerator({ attestedItems, pastLetters }) {
     }
   }
 
-  function handleDownload() {
-    downloadTextFile(`chew-lab-letter-${letter.id}.txt`, letter.content);
-    fetch(`/api/lab/credit/letters/${letter.id}?download=1`).catch(() => {});
+  // The one canonical download path — same route Hidden Leverage's
+  // re-download button calls (see HiddenLeverageCard.js) — fetches the
+  // real generated file (a genuine PDF for a mailed dispute letter, plain
+  // text for an escalation narrative) and only then marks it downloaded
+  // server-side. A failed fetch here must NOT be treated as a successful
+  // download — the button reports the failure instead of silently
+  // pretending the file was delivered.
+  async function handleDownload() {
+    setError(null);
+    setDownloading(true);
+    try {
+      const res = await fetch(`/api/lab/credit/letters/${letter.id}?download=1`);
+      if (!res.ok) throw new Error('Could not download this letter just now — try again in a moment.');
+      const blob = await res.blob();
+      downloadBlob(filenameFromResponse(res, letter.id), blob);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setDownloading(false);
+    }
   }
 
   if (letter) {
     return (
       <>
-        <LetterPreview letter={letter} onDownload={handleDownload} />
+        <LetterPreview letter={letter} onDownload={handleDownload} downloading={downloading} />
+        {error && <p style={{ color: 'var(--danger)', fontSize: '0.85rem', marginTop: '12px' }}>{error}</p>}
         <button
           type="button"
           className="btn btn-outline btn-sm"
