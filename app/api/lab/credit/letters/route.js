@@ -94,7 +94,7 @@ export async function POST(req) {
     }
 
     // Default kind: a Stage 1/2/3 dispute letter.
-    const { disputeItemIds, recipientType, recipientAddress, escalationNotes } = body;
+    const { disputeItemIds, recipientType, recipientAddress } = body;
 
     if (!Array.isArray(disputeItemIds) || disputeItemIds.length === 0) {
       return NextResponse.json({ error: 'disputeItemIds must be a non-empty array.' }, { status: 400 });
@@ -128,7 +128,6 @@ export async function POST(req) {
       recipientType,
       recipientAddressOverride,
       stage: STAGE_BY_RECIPIENT_TYPE[recipientType],
-      escalationNotes: escalationNotes?.trim() || null,
     });
     return NextResponse.json({ letter }, { status: 201 });
   } catch (err) {
