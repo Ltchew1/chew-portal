@@ -22,17 +22,23 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export default function ScoreGoal({ initialGoal, initialSnapshots, initialScorePath, initialScoreProvenance }) {
+export default function ScoreGoal({
+  initialGoal, initialSnapshots, initialScorePath, initialScoreProvenance,
+  initialScoreConflict, initialScoreConflictDetail,
+}) {
   const router = useRouter();
   const [goal, setGoal] = useState(initialGoal);
   const [snapshots, setSnapshots] = useState(initialSnapshots);
   const [scorePath, setScorePath] = useState(initialScorePath);
   const [scoreProvenance, setScoreProvenance] = useState(initialScoreProvenance);
+  const [scoreConflict, setScoreConflict] = useState(initialScoreConflict);
+  const [scoreConflictDetail, setScoreConflictDetail] = useState(initialScoreConflictDetail);
   const [targetInput, setTargetInput] = useState(goal?.targetValue ?? '');
   const [scoreInput, setScoreInput] = useState('');
   const [bureau, setBureau] = useState('overall');
   const [savingGoal, setSavingGoal] = useState(false);
   const [savingScore, setSavingScore] = useState(false);
+  const [resolvingId, setResolvingId] = useState(null);
   const [error, setError] = useState(null);
 
   async function refreshPath() {
@@ -41,7 +47,31 @@ export default function ScoreGoal({ initialGoal, initialSnapshots, initialScoreP
     setSnapshots(data.snapshots);
     setGoal(data.goal);
     setScoreProvenance(data.scoreProvenance);
+    setScoreConflict(data.scoreConflict);
+    setScoreConflictDetail(data.scoreConflictDetail);
     router.refresh();
+  }
+
+  // The member is only ever confirming which of their OWN already-logged
+  // numbers is correct — see app/api/lab/credit/score/conflict/route.js's
+  // header for why this can never grant a privileged provenance state.
+  async function handleResolveConflict(keepSnapshotId) {
+    setResolvingId(keepSnapshotId);
+    setError(null);
+    try {
+      const res = await fetch('/api/lab/credit/score/conflict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keepSnapshotId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not resolve that conflict.');
+      await refreshPath();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setResolvingId(null);
+    }
   }
 
   async function handleSetGoal(e) {
@@ -105,6 +135,37 @@ export default function ScoreGoal({ initialGoal, initialSnapshots, initialScoreP
         Whatever score you&apos;ve seen — on your own report, a card app, wherever — log it here. CHEW never pulls
         this itself; it only knows what you tell it.
       </p>
+
+      {scoreConflictDetail && (
+        <div
+          style={{
+            border: '1px solid var(--panel-border-strong)', borderRadius: 'var(--radius)',
+            padding: '14px 16px', marginBottom: '18px', background: 'rgba(201,162,39,0.06)',
+          }}
+        >
+          <strong style={{ display: 'block', marginBottom: '6px' }}>{scoreConflict.label}</strong>
+          <p style={{ fontSize: '0.85rem', marginBottom: '10px' }}>
+            You have {scoreConflictDetail.values.length} different scores logged for {scoreConflictDetail.bureauLabel}{' '}
+            on {new Date(scoreConflictDetail.reportedDate).toLocaleDateString()}: {scoreConflictDetail.values.join(' and ')}.
+            These can&apos;t both be right — which one is actually correct?
+          </p>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            {snapshots
+              .filter((s) => scoreConflictDetail.snapshotIds.includes(s.id))
+              .map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  disabled={resolvingId !== null}
+                  onClick={() => handleResolveConflict(s.id)}
+                >
+                  {resolvingId === s.id ? 'Saving…' : `${s.score} is correct`}
+                </button>
+              ))}
+          </div>
+        </div>
+      )}
 
       {scorePath ? (
         <div style={{ marginBottom: '18px' }}>

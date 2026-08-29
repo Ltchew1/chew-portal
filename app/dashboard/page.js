@@ -172,11 +172,14 @@ export default async function TodayPage() {
           readyCount={readyCount}
           totalRooms={ROOMS.length}
           planStatus={creditRoomResult?.planStatus ?? null}
-          score={creditRoomResult?.scorePath ? {
-            current: creditRoomResult.scorePath.current,
-            target: creditRoomResult.scorePath.target,
+          score={creditRoomResult?.scoreProvenance ? {
+            current: creditRoomResult.scorePath?.current ?? null,
+            target: creditRoomResult.scorePath?.target ?? null,
             freshnessLabel: creditRoomResult.scoreProvenance?.freshness === 'needs_update'
               ? creditRoomResult.scoreProvenance.freshnessLabel
+              : null,
+            conflictLabel: creditRoomResult.scoreConflict?.state === 'conflict_detected'
+              ? creditRoomResult.scoreConflict.label
               : null,
           } : null}
           barrierCount={creditRoomResult?.activeBarriers?.length ?? 0}

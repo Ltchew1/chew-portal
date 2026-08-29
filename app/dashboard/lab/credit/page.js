@@ -16,8 +16,11 @@ import { IconBook, IconScale, IconMail, IconClipboard, IconSparkles, IconVault, 
 import { listDisputeItemsForUser } from '../../../../lib/disputeItems';
 import { listLettersForUser } from '../../../../lib/letters';
 import { listTrackerEntriesForUser } from '../../../../lib/disputeTracker';
-import { getScoreGoal, listScoreSnapshots, pickLatestScore, computeScorePath, SCORE_RECONFIRM_WINDOW_DAYS } from '../../../../lib/creditScore';
-import { describeFact } from '../../../../lib/factProvenance';
+import {
+  getScoreGoal, listScoreSnapshots, pickLatestScore, computeScorePath, SCORE_RECONFIRM_WINDOW_DAYS,
+  detectScoreConflicts, describeScoreConflict,
+} from '../../../../lib/creditScore';
+import { describeFact, describeConflictState } from '../../../../lib/factProvenance';
 
 export default async function CreditRoomPage() {
   const user = await currentUser();
@@ -41,6 +44,9 @@ export default async function CreditRoomPage() {
     providedAt: latestScore.reportedDate,
     staleAfterDays: goal ? SCORE_RECONFIRM_WINDOW_DAYS : undefined,
   }) : null;
+  const scoreConflicts = detectScoreConflicts(scoreSnapshots);
+  const scoreConflict = describeConflictState(scoreConflicts);
+  const scoreConflictDetail = scoreConflicts.length > 0 ? describeScoreConflict(scoreConflicts[0]) : null;
 
   return (
     <>
@@ -141,6 +147,8 @@ export default async function CreditRoomPage() {
         initialSnapshots={scoreSnapshots}
         initialScorePath={scorePath}
         initialScoreProvenance={scoreProvenance}
+        initialScoreConflict={scoreConflict}
+        initialScoreConflictDetail={scoreConflictDetail}
       />
     </>
   );

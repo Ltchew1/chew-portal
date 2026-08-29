@@ -260,6 +260,20 @@ ALTER TABLE credit_score_snapshots ADD CONSTRAINT credit_score_snapshots_source_
     'connected_source', 'chew_derived', 'external_response', 'unknown'
   ));
 
+-- Fact Conflict + Uncertainty foundation (see lib/factProvenance.js's
+-- CONFLICT_STATES). Two snapshots sharing the same (bureau, reported_date)
+-- are claims about the literal same real-world state — if their scores
+-- disagree, that's a genuine contradiction (lib/creditScore.js's
+-- detectScoreConflicts), never silently resolved by "the newer row wins."
+-- Resolving one never deletes or mutates the losing row's value — it only
+-- stamps superseded_at/superseded_reason, the exact non-destructive pattern
+-- recommendations already uses (see lib/recommendations.js) — so
+-- listScoreSnapshots() still returns the full, honest history, and only
+-- lib/creditScore.js's pickLatestScore()/detectScoreConflicts() treat a
+-- superseded row as no longer active.
+ALTER TABLE credit_score_snapshots ADD COLUMN IF NOT EXISTS superseded_at TIMESTAMPTZ;
+ALTER TABLE credit_score_snapshots ADD COLUMN IF NOT EXISTS superseded_reason TEXT;
+
 CREATE INDEX IF NOT EXISTS idx_credit_score_snapshots_user_id ON credit_score_snapshots(user_id);
 
 -- ============================================================================

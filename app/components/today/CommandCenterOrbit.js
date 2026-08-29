@@ -60,12 +60,21 @@ function ringPosition(index, count, rx, ry, startDeg) {
   return { x: 50 + rx * Math.sin(rad), y: 50 - ry * Math.cos(rad) };
 }
 
-// `score.freshnessLabel` (see lib/factProvenance.js) is only ever passed
-// down when the freshness state is actually 'needs_update' — page.js
-// deliberately omits it for 'current', since restating "current" next to
-// every settled score would be metadata noise, not intelligence.
+// `score.freshnessLabel`/`score.conflictLabel` (see lib/factProvenance.js)
+// are only ever passed down when their state is actually the "needs your
+// attention" one — page.js deliberately omits them for 'current'/
+// 'no_conflict', since restating a settled state next to every score
+// would be metadata noise, not intelligence. A conflict outranks
+// freshness in this one line: an unresolved contradiction matters more
+// than whether the (disputed) number is old. `score` can exist with no
+// goal set yet (current/target null) — a logged-but-conflicting score
+// must still be visible even before a goal exists to read it, so this
+// never collapses back to "No score logged yet" just because there's no
+// target to show alongside it.
 function scoreReadout(score) {
   if (!score) return 'No score logged yet';
+  if (score.conflictLabel) return score.conflictLabel;
+  if (score.current == null || score.target == null) return 'Score logged — no goal set yet';
   const base = `Score ${score.current} → ${score.target}`;
   return score.freshnessLabel ? `${base} · ${score.freshnessLabel}` : base;
 }
