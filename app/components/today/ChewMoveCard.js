@@ -41,7 +41,7 @@ const IMPACT_LABELS = {
   pathwaysUnlocked: (n) => `${n} pathway${n === 1 ? '' : 's'} unlocked`,
 };
 
-function DominoCascade({ steps, baseDelay }) {
+export function DominoCascade({ steps, baseDelay }) {
   if (steps.length === 0) return null;
   return (
     <div className="chew-move-impact" aria-label="What this move accomplishes">
