@@ -2144,6 +2144,154 @@ a.room-tile:hover .enter-affordance svg { transform: translateX(4px); }
   border: 0;
 }
 
+/* CHEW ORBIT (app/components/today/CommandCenterOrbit.js) — Today's
+   centerpiece: the member's whole real position as one radial system.
+   Same technique as Life Map/Opportunity Radar above (SVG edge layer +
+   real DOM node buttons/links, percentage-positioned over a fixed-aspect
+   stage) — reused deliberately so this reads as the same visual system,
+   not a fourth reinvention of "spatial diagram." */
+.chew-orbit { margin-bottom: 8px; }
+
+.chew-orbit-status-strip {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  font-size: 0.82rem; color: var(--text-faint);
+  margin-bottom: 18px;
+}
+.chew-orbit-status-strip-item strong { color: var(--text); }
+.chew-orbit-status-strip-sep { opacity: 0.5; }
+.chew-orbit-status-strip-item--pulse { color: var(--gold-light); font-weight: 600; }
+
+.chew-orbit-stage--desktop {
+  position: relative;
+  width: 100%;
+  padding-top: 88%;
+  margin-bottom: 8px;
+}
+.chew-orbit-stage--mobile { display: none; }
+
+.chew-orbit-edges { position: absolute; inset: 0; width: 100%; height: 100%; }
+.chew-orbit-edge { stroke: var(--divider); stroke-width: 0.3; transition: stroke 0.5s ease, stroke-width 0.5s ease; }
+.chew-orbit-edge--room.chew-orbit-edge--live { stroke: rgba(201,162,39,0.3); stroke-width: 0.4; }
+.chew-orbit-edge--signal.chew-orbit-tone--move { stroke: var(--gold-light); stroke-width: 0.5; stroke-dasharray: 2 1.2; animation: life-map-flow 2.8s linear infinite; }
+.chew-orbit-edge--signal.chew-orbit-tone--barrier { stroke: rgba(181,84,74,0.55); stroke-width: 0.45; stroke-dasharray: 1.6 1.2; }
+.chew-orbit-edge--signal.chew-orbit-tone--opportunity { stroke: rgba(74,155,110,0.55); stroke-width: 0.45; }
+
+/* The center — bigger, higher-contrast version of Life Map's anchor
+   (which stays "You," a plain button); this one carries real plan-status
+   state as color, since Orbit's whole point is "here is your position,"
+   not just "here is the middle of the map." */
+.chew-orbit-center-halo {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 150px; height: 150px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(201,162,39,0.24) 0%, transparent 72%);
+  animation: life-map-breathe 4.2s ease-in-out infinite;
+  pointer-events: none;
+}
+.chew-orbit-center {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 128px; height: 128px;
+  border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  background: radial-gradient(circle at 30% 20%, rgba(201,162,39,0.14), transparent 60%), var(--black-elev);
+  border: 1px solid var(--panel-border-strong);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 0 40px rgba(201,162,39,0.1);
+  text-align: center;
+  padding: 8px;
+}
+.chew-orbit-center-eyebrow { font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-faint); }
+.chew-orbit-center-name { font-family: 'Fraunces', Georgia, serif; font-size: 1.15rem; line-height: 1.1; }
+.chew-orbit-center-status { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--gold-light); }
+.chew-orbit-center-score { font-size: 0.68rem; color: var(--text-faint); }
+.chew-orbit-status--stable .chew-orbit-center-status { color: var(--success); }
+.chew-orbit-status--stable { border-color: rgba(74,155,110,0.4); box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 0 40px rgba(74,155,110,0.14); }
+.chew-orbit-status--risk .chew-orbit-center-status { color: var(--danger); }
+.chew-orbit-status--risk { border-color: rgba(181,84,74,0.45); box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 0 40px rgba(181,84,74,0.16); }
+.chew-orbit-status--action .chew-orbit-center-status,
+.chew-orbit-status--watch .chew-orbit-center-status { color: var(--gold-light); }
+
+/* Nodes — signals (inner ring, larger, colored by real urgency) and
+   rooms (outer ring, Life Map's own state badges, smaller/quieter so the
+   signal ring reads as "closer to home"). */
+.chew-orbit-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  text-align: center;
+  color: inherit;
+  text-decoration: none;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid var(--divider);
+  background: linear-gradient(165deg, var(--black-elev) 0%, var(--black-soft) 100%);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  transition: border-color 0.35s ease, box-shadow 0.35s ease, transform 0.35s cubic-bezier(0.16,1,0.3,1), opacity 0.35s ease;
+}
+.chew-orbit-node--signal { min-width: 96px; max-width: 148px; padding: 10px 12px; }
+.chew-orbit-node--room { min-width: 84px; opacity: 0.88; }
+.chew-orbit-node:hover { transform: translate(-50%, -50%) scale(1.06); border-color: var(--panel-border-strong); }
+.chew-orbit-node-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-faint); }
+.chew-orbit-node-value { font-size: 0.78rem; line-height: 1.25; }
+.chew-orbit-node-sub { font-size: 0.66rem; color: var(--gold-light); }
+.chew-orbit-node-icon { display: flex; color: var(--gold-light); opacity: 0.9; }
+.chew-orbit-node-icon svg { width: 16px; height: 16px; }
+
+.chew-orbit-tone--move { border-color: var(--panel-border-strong); box-shadow: 0 0 20px rgba(201,162,39,0.16); }
+.chew-orbit-tone--barrier { border-color: rgba(181,84,74,0.4); box-shadow: 0 0 20px rgba(181,84,74,0.14); }
+.chew-orbit-tone--opportunity { border-color: rgba(74,155,110,0.4); box-shadow: 0 0 20px rgba(74,155,110,0.12); }
+.chew-orbit-tone--quiet { opacity: 0.7; }
+.chew-orbit-node--dormant { filter: grayscale(0.4) blur(0.3px); opacity: 0.55; cursor: default; }
+
+@media (max-width: 640px) {
+  .chew-orbit-stage--desktop { display: none; }
+  .chew-orbit-stage--mobile { display: block; }
+}
+
+.chew-orbit-mobile-center {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--panel-border-strong);
+  background: radial-gradient(circle at 20% 0%, rgba(201,162,39,0.14), transparent 60%), var(--black-elev);
+  margin-bottom: 14px;
+}
+.chew-orbit-mobile-center .chew-orbit-center-eyebrow { display: block; }
+.chew-orbit-mobile-center .chew-orbit-center-name { display: block; font-size: 1.3rem; }
+.chew-orbit-mobile-center-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.chew-orbit-mobile-center.chew-orbit-status--stable { border-color: rgba(74,155,110,0.4); }
+.chew-orbit-mobile-center.chew-orbit-status--stable .chew-orbit-center-status { color: var(--success); }
+.chew-orbit-mobile-center.chew-orbit-status--risk { border-color: rgba(181,84,74,0.45); }
+.chew-orbit-mobile-center.chew-orbit-status--risk .chew-orbit-center-status { color: var(--danger); }
+
+.chew-orbit-mobile-rail {
+  display: flex; gap: 10px; overflow-x: auto;
+  padding-bottom: 10px; margin-bottom: 4px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+.chew-orbit-mobile-chip {
+  scroll-snap-align: start;
+  flex: 0 0 auto;
+  display: flex; flex-direction: column; gap: 4px;
+  min-width: 128px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--divider);
+  background: var(--black-elev);
+  color: inherit;
+  text-decoration: none;
+}
+.chew-orbit-mobile-chip--room { min-width: 100px; }
+.chew-orbit-mobile-chip--dormant { opacity: 0.55; }
+.chew-orbit-mobile-chip.chew-orbit-tone--move { border-color: var(--panel-border-strong); }
+.chew-orbit-mobile-chip.chew-orbit-tone--barrier { border-color: rgba(181,84,74,0.4); }
+.chew-orbit-mobile-chip.chew-orbit-tone--opportunity { border-color: rgba(74,155,110,0.4); }
+
 /* ---------- Misc ---------- */
 
 .text-faint { color: var(--text-faint); }

@@ -9,8 +9,8 @@
 // clientStatus actually clears that room's gate.
 
 import { currentUser } from '@clerk/nextjs/server';
-import GoldProgressRing from '../components/lab/GoldProgressRing';
 import RevealOnScroll from '../components/lab/RevealOnScroll';
+import CommandCenterOrbit from '../components/today/CommandCenterOrbit';
 import ChewMoveCard from '../components/today/ChewMoveCard';
 import BarrierDissolve from '../components/today/BarrierDissolve';
 import WhatChangedRipple from '../components/today/WhatChangedRipple';
@@ -165,33 +165,44 @@ export default async function TodayPage() {
         </p>
       )}
 
-      <div className="lab-access-row" style={{ margin: '20px 0 32px' }}>
-        <GoldProgressRing value={readyCount} max={ROOMS.length} caption="Rooms open" />
-        <div className="lab-access-copy">
-          <strong>Your access: {STATUS_LABELS[status]}</strong>
-          <span>
-            {readyCount === 0
-              ? `No rooms open yet — Credit opens once your account reaches ${STATUS_LABELS[creditRoom.requiredStatus]}.`
-              : `${readyCount} of ${ROOMS.length} rooms open on your account.`}
-          </span>
-        </div>
+      <div style={{ margin: '24px 0 8px' }}>
+        <CommandCenterOrbit
+          firstName={firstName}
+          statusLabel={STATUS_LABELS[status]}
+          readyCount={readyCount}
+          totalRooms={ROOMS.length}
+          planStatus={creditRoomResult?.planStatus ?? null}
+          score={creditRoomResult?.scorePath ? {
+            current: creditRoomResult.scorePath.current,
+            target: creditRoomResult.scorePath.target,
+          } : null}
+          barrierCount={creditRoomResult?.activeBarriers?.length ?? 0}
+          opportunityCount={opportunityRadar.availableNow.length + opportunityRadar.newlyUnlocked.length}
+          changedCount={changedCount}
+          attentionCount={attentionCount}
+          momentLevel={momentLevel}
+          moveActionText={move?.action ?? null}
+          rooms={lifeMapGraph}
+        />
       </div>
 
-      <ChewMoveCard
-        move={move}
-        noMoveReason={noMoveReason}
-        urgent={urgentMove}
-        signals={moveSignals}
-        domino={domino}
-        goal={goal}
-        changed={moveChanged}
-        previousActionText={previousActionText}
-        level={moveLevel}
-        connects={crossSystemDomino}
-        handoffDelay={moveChanged && choreographyLikely}
-        moveId={moveId}
-        moveCoOccurringNodeIds={moveCoOccurringNodeIds}
-      />
+      <div id="chew-move">
+        <ChewMoveCard
+          move={move}
+          noMoveReason={noMoveReason}
+          urgent={urgentMove}
+          signals={moveSignals}
+          domino={domino}
+          goal={goal}
+          changed={moveChanged}
+          previousActionText={previousActionText}
+          level={moveLevel}
+          connects={crossSystemDomino}
+          handoffDelay={moveChanged && choreographyLikely}
+          moveId={moveId}
+          moveCoOccurringNodeIds={moveCoOccurringNodeIds}
+        />
+      </div>
 
       {dissolveEvents.length > 0 && (
         <RevealOnScroll className="today-reveal">
@@ -200,7 +211,7 @@ export default async function TodayPage() {
       )}
 
       {creditRoomResult && (creditRoomResult.whatChanged.length > 0 || creditRoomResult.chewNoticed.length > 0) && (
-        <RevealOnScroll className="today-reveal">
+        <RevealOnScroll className="today-reveal" id="what-changed">
           <span className="today-section-eyebrow">What changed</span>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
             <WhatChangedRipple story={changeStory} items={ripple.items} />
@@ -220,13 +231,13 @@ export default async function TodayPage() {
       )}
 
       {creditRoomResult && creditRoomResult.activeBarriers?.length > 0 && (
-        <RevealOnScroll className="today-reveal" data-chew-focus-target data-chew-system="waiting">
+        <RevealOnScroll className="today-reveal" id="whats-waiting" data-chew-focus-target data-chew-system="waiting">
           <span className={`today-section-eyebrow${rippleClass('waiting')}`}>What&apos;s waiting</span>
           <WhatsWaiting barriers={creditRoomResult.activeBarriers} />
         </RevealOnScroll>
       )}
 
-      <RevealOnScroll className="today-reveal" data-chew-focus-target data-chew-system="opportunity">
+      <RevealOnScroll className="today-reveal" id="opportunity-radar" data-chew-focus-target data-chew-system="opportunity">
         <span className={`today-section-eyebrow${rippleClass('opportunity')}`}>What&apos;s opening</span>
         <OpportunityRadar radar={opportunityRadar} />
       </RevealOnScroll>
