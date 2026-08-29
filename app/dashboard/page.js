@@ -175,6 +175,9 @@ export default async function TodayPage() {
           score={creditRoomResult?.scorePath ? {
             current: creditRoomResult.scorePath.current,
             target: creditRoomResult.scorePath.target,
+            freshnessLabel: creditRoomResult.scoreProvenance?.freshness === 'needs_update'
+              ? creditRoomResult.scoreProvenance.freshnessLabel
+              : null,
           } : null}
           barrierCount={creditRoomResult?.activeBarriers?.length ?? 0}
           opportunityCount={opportunityRadar.availableNow.length + opportunityRadar.newlyUnlocked.length}

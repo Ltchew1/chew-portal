@@ -22,11 +22,12 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export default function ScoreGoal({ initialGoal, initialSnapshots, initialScorePath }) {
+export default function ScoreGoal({ initialGoal, initialSnapshots, initialScorePath, initialScoreProvenance }) {
   const router = useRouter();
   const [goal, setGoal] = useState(initialGoal);
   const [snapshots, setSnapshots] = useState(initialSnapshots);
   const [scorePath, setScorePath] = useState(initialScorePath);
+  const [scoreProvenance, setScoreProvenance] = useState(initialScoreProvenance);
   const [targetInput, setTargetInput] = useState(goal?.targetValue ?? '');
   const [scoreInput, setScoreInput] = useState('');
   const [bureau, setBureau] = useState('overall');
@@ -39,6 +40,7 @@ export default function ScoreGoal({ initialGoal, initialSnapshots, initialScoreP
     const data = await res.json();
     setSnapshots(data.snapshots);
     setGoal(data.goal);
+    setScoreProvenance(data.scoreProvenance);
     router.refresh();
   }
 
@@ -193,6 +195,9 @@ export default function ScoreGoal({ initialGoal, initialSnapshots, initialScoreP
       {latest && (
         <p className="text-faint" style={{ fontSize: '0.78rem', marginTop: '14px' }}>
           Last logged: {latest.score} ({latest.bureau ?? 'overall'}) on {new Date(latest.reportedDate).toLocaleDateString()}
+          {scoreProvenance?.freshness === 'needs_update' && (
+            <> · <span style={{ color: 'var(--gold-light)', fontWeight: 600 }}>{scoreProvenance.freshnessLabel}</span></>
+          )}
         </p>
       )}
 

@@ -244,6 +244,22 @@ CREATE TABLE IF NOT EXISTS credit_score_snapshots (
   created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- CHEW's first universal fact/provenance vocabulary (see lib/factProvenance.js)
+-- applied to its first real fact: the score value itself. Nullable and never
+-- backfilled — an existing row recorded before this column existed has no
+-- trustworthy provenance to claim, so it stays NULL (lib/factProvenance.js
+-- reads a NULL/unrecognized value as 'unknown', never guesses). Every row
+-- inserted through lib/creditScore.js's recordScoreSnapshot() from this point
+-- forward sets it to 'member_provided' — the only way a score reaches this
+-- table today; see that file's own comment.
+ALTER TABLE credit_score_snapshots ADD COLUMN IF NOT EXISTS source_type TEXT;
+ALTER TABLE credit_score_snapshots DROP CONSTRAINT IF EXISTS credit_score_snapshots_source_type_check;
+ALTER TABLE credit_score_snapshots ADD CONSTRAINT credit_score_snapshots_source_type_check
+  CHECK (source_type IS NULL OR source_type IN (
+    'member_provided', 'document_provided', 'reviewed_with_chew',
+    'connected_source', 'chew_derived', 'external_response', 'unknown'
+  ));
+
 CREATE INDEX IF NOT EXISTS idx_credit_score_snapshots_user_id ON credit_score_snapshots(user_id);
 
 -- ============================================================================

@@ -16,7 +16,8 @@ import { IconBook, IconScale, IconMail, IconClipboard, IconSparkles, IconVault, 
 import { listDisputeItemsForUser } from '../../../../lib/disputeItems';
 import { listLettersForUser } from '../../../../lib/letters';
 import { listTrackerEntriesForUser } from '../../../../lib/disputeTracker';
-import { getScoreGoal, listScoreSnapshots, pickLatestScore, computeScorePath } from '../../../../lib/creditScore';
+import { getScoreGoal, listScoreSnapshots, pickLatestScore, computeScorePath, SCORE_RECONFIRM_WINDOW_DAYS } from '../../../../lib/creditScore';
+import { describeFact } from '../../../../lib/factProvenance';
 
 export default async function CreditRoomPage() {
   const user = await currentUser();
@@ -30,7 +31,16 @@ export default async function CreditRoomPage() {
   const attestedCount = items.filter((i) => i.attested_at).length;
   const openTrackerCount = trackerEntries.filter((e) => e.status !== 'resolved').length;
   const openItemCount = items.filter((i) => i.status === 'flagged' || i.status === 'attested').length;
-  const scorePath = computeScorePath({ goal, latestScore: pickLatestScore(scoreSnapshots), openItemCount });
+  const latestScore = pickLatestScore(scoreSnapshots);
+  const scorePath = computeScorePath({ goal, latestScore, openItemCount });
+  // Same fact-provenance foundation Today's Orbit reads (lib/factProvenance.js)
+  // — the score's own home page is the most relevant place to show it, so
+  // this doesn't wait for a member to notice it secondhand on Today.
+  const scoreProvenance = latestScore ? describeFact({
+    sourceType: latestScore.sourceType,
+    providedAt: latestScore.reportedDate,
+    staleAfterDays: goal ? SCORE_RECONFIRM_WINDOW_DAYS : undefined,
+  }) : null;
 
   return (
     <>
@@ -126,7 +136,12 @@ export default async function CreditRoomPage() {
         </Link>
       </div>
 
-      <ScoreGoal initialGoal={goal} initialSnapshots={scoreSnapshots} initialScorePath={scorePath} />
+      <ScoreGoal
+        initialGoal={goal}
+        initialSnapshots={scoreSnapshots}
+        initialScorePath={scorePath}
+        initialScoreProvenance={scoreProvenance}
+      />
     </>
   );
 }

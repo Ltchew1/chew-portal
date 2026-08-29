@@ -8,7 +8,8 @@
 import { NextResponse } from 'next/server';
 import { getRoomAccess } from '../../../../../lib/clientStatus';
 import { getRoom } from '../../../../../lib/rooms';
-import { recordScoreSnapshot, listScoreSnapshots, getScoreGoal } from '../../../../../lib/creditScore';
+import { recordScoreSnapshot, listScoreSnapshots, getScoreGoal, pickLatestScore, SCORE_RECONFIRM_WINDOW_DAYS } from '../../../../../lib/creditScore';
+import { describeFact } from '../../../../../lib/factProvenance';
 
 const CREDIT_REQUIRED_STATUS = getRoom('credit').requiredStatus;
 const VALID_BUREAUS = ['equifax', 'experian', 'transunion', 'overall'];
@@ -22,7 +23,16 @@ export async function GET() {
     listScoreSnapshots(user.id),
     getScoreGoal(user.id),
   ]);
-  return NextResponse.json({ snapshots, goal });
+  // Provenance/freshness is computed server-side, same as every other
+  // authoritative Credit signal — a client re-deriving "is this stale"
+  // from a raw date would be a second, driftable copy of this logic.
+  const latestScore = pickLatestScore(snapshots);
+  const scoreProvenance = latestScore ? describeFact({
+    sourceType: latestScore.sourceType,
+    providedAt: latestScore.reportedDate,
+    staleAfterDays: goal ? SCORE_RECONFIRM_WINDOW_DAYS : undefined,
+  }) : null;
+  return NextResponse.json({ snapshots, goal, scoreProvenance });
 }
 
 export async function POST(req) {

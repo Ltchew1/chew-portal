@@ -60,6 +60,16 @@ function ringPosition(index, count, rx, ry, startDeg) {
   return { x: 50 + rx * Math.sin(rad), y: 50 - ry * Math.cos(rad) };
 }
 
+// `score.freshnessLabel` (see lib/factProvenance.js) is only ever passed
+// down when the freshness state is actually 'needs_update' — page.js
+// deliberately omits it for 'current', since restating "current" next to
+// every settled score would be metadata noise, not intelligence.
+function scoreReadout(score) {
+  if (!score) return 'No score logged yet';
+  const base = `Score ${score.current} → ${score.target}`;
+  return score.freshnessLabel ? `${base} · ${score.freshnessLabel}` : base;
+}
+
 // `tone` is the one real-urgency color signal shared by a signal's node
 // AND its connecting edge (see the `chew-orbit-tone--*` CSS classes) —
 // kept element-agnostic on purpose so it never reads as if edges were
@@ -177,7 +187,7 @@ export default function CommandCenterOrbit({
           <strong className="chew-orbit-center-name">{firstName}</strong>
           <span className="chew-orbit-center-status">{statusMeta?.word ?? 'Getting started'}</span>
           <span className="chew-orbit-center-score">
-            {score ? `Score ${score.current} → ${score.target}` : 'No score logged yet'}
+            {scoreReadout(score)}
           </span>
         </div>
 
@@ -198,7 +208,7 @@ export default function CommandCenterOrbit({
           <div className="chew-orbit-mobile-center-right">
             <span className="chew-orbit-center-status">{statusMeta?.word ?? 'Getting started'}</span>
             <span className="chew-orbit-center-score">
-              {score ? `Score ${score.current} → ${score.target}` : 'No score logged yet'}
+              {scoreReadout(score)}
             </span>
           </div>
         </div>
