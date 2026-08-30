@@ -9,8 +9,15 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { currentUser } from '@clerk/nextjs/server';
+import { checkRateLimit, rateLimitExceededBody } from '../../../lib/rateLimit';
 
 export const runtime = 'nodejs';
+
+// The highest real-cost route in this app — every call is a metered
+// Claude API request. 30 messages per 10 minutes is generous for actual
+// back-and-forth conversation pace but blocks a scripted loop from
+// running up API spend on one account.
+const RATE_LIMIT = { limit: 30, windowSeconds: 600 };
 
 // This system prompt is the actual compliance boundary for this feature.
 // It is written to keep the assistant firmly in "financial education"
@@ -49,6 +56,14 @@ export async function POST(req) {
   const user = await currentUser();
   if (!user) {
     return new Response('Unauthorized', { status: 401 });
+  }
+
+  const rl = await checkRateLimit({ key: `guidance:${user.id}`, ...RATE_LIMIT });
+  if (!rl.allowed) {
+    return new Response(JSON.stringify(rateLimitExceededBody()), {
+      status: 429,
+      headers: { 'Content-Type': 'application/json', 'Retry-After': String(rl.retryAfterSeconds) },
+    });
   }
 
   let body;
